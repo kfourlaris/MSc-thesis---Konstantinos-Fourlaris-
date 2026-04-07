@@ -53,7 +53,7 @@ class BiomassBoiler:
 
         # 3. Minimum & Maximum Operating Power (The core constraint)
         # delta_k * P_k <= U_t <= P_k (multiplied by y_t for ON/OFF)
-        # Note: Because P_cap * y_on is non-linear, we use the proposed Gurobi's linearization
+        # Note: Because P_cap * y_on is bilinear, we use the proposed Gurobi's linearization
         for t in timesteps:
             # 1. UPPER BOUND: If y=1, V_heat <= P_cap. If y=0, V_heat <= 0.
             # This uses a Big-M (p_max_market) to handle the bilinear y * P_cap

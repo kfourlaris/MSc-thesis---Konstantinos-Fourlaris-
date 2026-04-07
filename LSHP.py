@@ -18,19 +18,19 @@ class LargeScaleHeatPump:
         self.capex_per_kw = capex_per_kw_th
         self.opex_per_kw = opex_per_kw_th
 
-        # Placeholders for Variables (Matching Table 4.2)
-        self.P_cap = None      # Design size (P_k) [cite: 205]
-        self.b_select = None   # Tech selection (b_k) [cite: 205]
-        self.y_on = {}         # Hourly ON/OFF scheduling (y_k,t) [cite: 205]
-        self.V_heat = {}       # Output Heat (V_H,HP,t) [cite: 205]
-        self.U_elec = {}       # Input Electricity (U_E,HP,t) [cite: 205]
+        # Placeholders for Variables (Matching my proposal)
+        self.P_cap = None      # Design size (P_k)
+        self.b_select = None   # Tech selection (b_k)
+        self.y_on = {}         # Hourly ON/OFF scheduling (y_k,t)
+        self.V_heat = {}       # Output Heat (V_H,HP,t)
+        self.U_elec = {}       # Input Electricity (U_E,HP,t)
 
     def add_variables(self, model, timesteps):
-        # Design Variables (Z) [cite: 207]
+        # Design Variables (Z)
         self.P_cap = model.addVar(lb=0, vtype=GRB.CONTINUOUS, name=f"P_{self.name}")
         self.b_select = model.addVar(vtype=GRB.BINARY, name=f"b_{self.name}")
 
-        # Operational Variables (X) [cite: 207]
+        # Operational Variables (X)
         self.y_on = model.addVars(timesteps, vtype=GRB.BINARY, name=f"y_{self.name}")
         self.V_heat = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"V_H_{self.name}")
         self.U_elec = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"U_E_{self.name}")
@@ -40,15 +40,15 @@ class LargeScaleHeatPump:
         Args:
             cop_vector: A list or dictionary of 8760 pre-calculated hourly COP values.
         """
-        # 1. Market Size Limits (P_k,min <= P_k <= P_k,max) [cite: 42]
+        # 1. Market Size Limits (P_k,min <= P_k <= P_k,max)
         model.addConstr(self.P_cap >= self.b_select * self.p_min, name=f"market_min_{self.name}")
         model.addConstr(self.P_cap <= self.b_select * self.p_max, name=f"market_max_{self.name}")
 
         # 2. Performance: V_H(t) = U_E(t) * COP(t)
-        # Using the temperature-dependent COP vector calculated for Zurich/Amsterdam [cite: 134, 254]
+        # Using the COP defined in cofig.py
         model.addConstrs(
             (self.V_heat[t] == self.U_elec[t] * cop_vector[t] for t in timesteps),
-            name=f"perf_cop_{self.name}"
+            name=f"perf_regression_cop_{self.name}"
         )
 
         # 3. Minimum & Maximum Operating Power (Linearized Big-M logic)
@@ -57,7 +57,7 @@ class LargeScaleHeatPump:
             model.addConstr(self.V_heat[t] <= self.P_cap, name=f"up_bound_P_{self.name}_{t}")
             model.addConstr(self.V_heat[t] <= self.y_on[t] * self.p_max, name=f"up_bound_y_{self.name}_{t}")
 
-            # LOWER BOUND: Minimum load fraction delta [cite: 233]
+            # LOWER BOUND: Minimum load fraction delta
             # Enforces V_heat >= delta * P_cap when y=1
             model.addConstr(self.V_heat[t] >= self.delta * self.P_cap - (1 - self.y_on[t]) * self.p_max,
                             name=f"low_bound_{self.name}_{t}")

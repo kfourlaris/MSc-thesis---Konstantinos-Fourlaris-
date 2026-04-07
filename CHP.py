@@ -21,20 +21,20 @@ class CHP:
         self.capex_per_kw = capex_per_kw_el
         self.opex_per_kw = opex_per_kw_el
 
-        # Placeholders for Variables (Matching Table 4.2 of your proposal)
+        # Placeholders for Variables (Matching what is defined in my proposal)
         self.P_cap = None      # Design size in kW_el (P_k)
-        self.b_select = None   # Tech selection (b_k) [cite: 205]
-        self.y_on = {}         # Hourly ON/OFF scheduling (y_k,t) [cite: 205]
-        self.V_elec = {}       # Output Electricity (V_E,k,t) [cite: 205]
-        self.V_heat = {}       # Output Heat (V_H,k,t) [cite: 205]
-        self.U_gas = {}        # Input Natural Gas (U_NG,k,t) [cite: 205]
+        self.b_select = None   # Tech selection (b_k)
+        self.y_on = {}         # Hourly ON/OFF scheduling (y_k,t)
+        self.V_elec = {}       # Output Electricity (V_E,k,t)
+        self.V_heat = {}       # Output Heat (V_H,k,t)
+        self.U_gas = {}        # Input Natural Gas (U_NG,k,t)
 
     def add_variables(self, model, timesteps):
-        # Design Variables (Z) [cite: 207]
+        # Design Variables (Z)
         self.P_cap = model.addVar(lb=0, vtype=GRB.CONTINUOUS, name=f"P_{self.name}")
         self.b_select = model.addVar(vtype=GRB.BINARY, name=f"b_{self.name}")
 
-        # Operational Variables (X) [cite: 207]
+        # Operational Variables (X)
         self.y_on = model.addVars(timesteps, vtype=GRB.BINARY, name=f"y_{self.name}")
         self.V_elec = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"V_E_{self.name}")
         self.V_heat = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"V_H_{self.name}")
