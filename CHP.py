@@ -2,7 +2,7 @@ from gurobipy import GRB
 
 class CHP:
     def __init__(self, name, efficiency_el=0.35, efficiency_th=0.45,
-                 p_min_market=500, p_max_market=100000,
+                 p_min_market=500, p_max_market=100000000,
                  min_load_fraction=0.15, capex_per_kw_el=800, opex_per_kw_el=20):
         """
         Args:

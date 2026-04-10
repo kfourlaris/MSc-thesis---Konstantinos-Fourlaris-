@@ -5,8 +5,24 @@ INTEREST_RATE = 0.12
 LIFESPAN = 20
 T_SINK = 75.0  # DH Supply Temperature
 
-# --- HEAT DEMAND ---
-HEAT_DEMAND = [55000] * 3000 + [30000] * 3000 + [53000] * (8760 - 6000)
+# --- ENERGY DEMAND ---
+# CHANGE THIS TO "Amsterdam" OR "Zurich" TO SWITCH THE ENTIRE MODEL
+SELECTED_CITY = "Zurich"
+
+# File paths
+INPUT_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
+
+# Mapping dictionary to handle the column names dynamically
+CITY_CONFIG = {
+    "Zurich": {
+        "heat_col": "Zurich_Total_Heating_MWh",
+        "cool_col": "Zurich_Total_Cooling_MWh"
+    },
+    "Amsterdam": {
+        "heat_col": "Amsterdam_Total_Heating_MWh",
+        "cool_col": "Amsterdam_Total_Cooling_MWh"
+    }
+}
 
 # --- MARKET PRICES ---
 FUEL_PRICES = {"biomass": 0.05, "gas": 0.12}  # Euro/kWh

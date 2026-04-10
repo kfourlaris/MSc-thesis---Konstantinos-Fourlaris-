@@ -1,7 +1,7 @@
 from gurobipy import GRB
 
 class LargeScaleHeatPump:
-    def __init__(self, name, p_min_market=500, p_max_market=50000,
+    def __init__(self, name, p_min_market=500, p_max_market=50000000,
                  min_load_fraction=0.25, capex_per_kw_th=600, opex_per_kw_th=15):
         """
         Args:

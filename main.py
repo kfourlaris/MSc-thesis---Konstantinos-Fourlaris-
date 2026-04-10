@@ -17,6 +17,17 @@ from LSHP import LargeScaleHeatPump
 print(f"Using CRF: {config.ANNUITY_FACTOR:.4f}")
 print(f"Average COP: {sum(config.COP_VEC)/8760:.2f}")
 
+# --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
+# Load the final MWh file
+df_demand = pd.read_excel(config.INPUT_DATA_PATH)
+
+# Get the correct column name from config mapping
+selected_col = config.CITY_CONFIG[config.SELECTED_CITY]["heat_col"]
+
+# Extract the hourly values as a list (8760 values)
+# Note: Since your model uses kW, and the file is in MWh,
+# 1 MWh in one hour = 1000 kW power.
+HEAT_DEMAND_VEC = (df_demand[selected_col] * 1000).tolist()
 
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
@@ -39,7 +50,7 @@ for tech in technologies:
 # --- STEP 3: GLOBAL ENERGY BALANCE ---
 # Heat production from all units must meet demand every hour
 model.addConstrs(
-    (gp.quicksum(tech.V_heat[t] for tech in technologies) == config.HEAT_DEMAND[t]
+    (gp.quicksum(tech.V_heat[t] for tech in technologies) == HEAT_DEMAND_VEC[t]
      for t in timesteps),
     name="Heat_Demand_Balance"
 )
@@ -80,7 +91,7 @@ if model.Status == GRB.OPTIMAL:
     boiler_gen = [boiler.V_heat[t].X for t in t_plot]
     chp_gen = [chp.V_heat[t].X for t in t_plot]
     hp_gen = [hp.V_heat[t].X for t in t_plot]
-    actual_demand = [config.HEAT_DEMAND[t] for t in t_plot]
+    actual_demand = [HEAT_DEMAND_VEC[t] for t in t_plot]
 
     # 2. Create the Stacked Area Plot
     plt.figure(figsize=(12, 6))

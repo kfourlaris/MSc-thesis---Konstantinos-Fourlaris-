@@ -3,7 +3,7 @@ from gurobipy import GRB
 
 class BiomassBoiler:
     def __init__(self, name, efficiency=0.85,
-                 p_min_market=100, p_max_market=50000,
+                 p_min_market=100, p_max_market=50000000,
                  min_load_fraction=0.10, capex_per_kw=250, opex_per_kw=5):
         """
         Args:
