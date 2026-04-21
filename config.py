@@ -3,7 +3,8 @@ import numpy as np
 # --- GLOBAL SETTINGS (Subject to change) ---
 INTEREST_RATE = 0.12
 LIFESPAN = 20
-T_SINK = 75.0  # DH Supply Temperature
+T_SINK = 85.0  # DH Supply Temperature
+T_RETURN = 25  # DH Return Temperature
 
 # --- ENERGY DEMAND ---
 # CHANGE THIS TO "Amsterdam" OR "Zurich" TO SWITCH THE ENTIRE MODEL
