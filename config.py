@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 # --- GLOBAL SETTINGS (Subject to change) ---
 INTEREST_RATE = 0.12
@@ -11,24 +12,32 @@ T_RETURN = 25  # DH Return Temperature
 SELECTED_CITY = "Zurich"
 
 # File paths
-INPUT_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
+DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
+PRICE_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/DAM_Prices_2025_Consolidated.xlsx'
 
 # Mapping dictionary to handle the column names dynamically
 CITY_CONFIG = {
     "Zurich": {
         "heat_col": "Zurich_Total_Heating_MWh",
-        "cool_col": "Zurich_Total_Cooling_MWh"
+        "cool_col": "Zurich_Total_Cooling_MWh",
+        "elec_price_col": "Swiss_DAM_Price_Avg"  # Averaged profile for Switzerland
     },
     "Amsterdam": {
         "heat_col": "Amsterdam_Total_Heating_MWh",
-        "cool_col": "Amsterdam_Total_Cooling_MWh"
+        "cool_col": "Amsterdam_Total_Cooling_MWh",
+        "elec_price_col": "Dutch_DAM_Price_2025" # Actual 2025 profile for NL
     }
 }
+
+# 2. Load Electricity Prices
+df_prices = pd.read_excel(PRICE_DATA_PATH)
+# We convert EUR/MWh to EUR/kWh if your model uses kWh for energy (divide by 1000)
+elec_prices_kwh = df_prices[CITY_CONFIG[SELECTED_CITY]["elec_price_col"]].values / 1000
 
 # --- MARKET PRICES ---
 FUEL_PRICES = {"biomass": 0.05, "gas": 0.12}  # Euro/kWh
 ELEC_REVENUE = 0.10  # Selling price for CHP electricity
-ELEC_PRICE = 0.2     # Buying price for Heat Pump electricity
+DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
 # --- DATA GENERATION (Ambient Temperatures) ---
 # Here we would later load Zurich/Amsterdam Excel/CSV files

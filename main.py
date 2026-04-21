@@ -21,21 +21,24 @@ print(f"Average COP: {sum(config.COP_VEC)/8760:.2f}")
 
 # --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
 # Load the final MWh file
-df_demand = pd.read_excel(config.INPUT_DATA_PATH)
+df_demand = pd.read_excel(config.DEMAND_DATA_PATH)
+df_prices = pd.read_excel(config.PRICE_DATA_PATH)
 
 # Get the correct column name from config mapping
 selected_col = config.CITY_CONFIG[config.SELECTED_CITY]["heat_col"]
+selected_elec_col = config.CITY_CONFIG[config.SELECTED_CITY]["elec_price_col"]
 
 # Extract the hourly values as a list (8760 values)
 # Note: Since your model uses kW, and the file is in MWh,
 # 1 MWh in one hour = 1000 kW power.
 HEAT_DEMAND_VEC = (df_demand[selected_col] * 1000).tolist()
 peak_demand_kw = max(HEAT_DEMAND_VEC)
+ELEC_PRICE_VEC = (df_prices[selected_elec_col] / 1000).tolist()
 
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
 timesteps = range(8760)  # Hourly resolution for one year
-model.setParam('MIPGap', 0.01) #for making it run faster
+model.setParam('MIPGap', 0.003) #for making it run faster
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 boiler = BiomassBoiler("BB_Zurich")
@@ -72,7 +75,7 @@ annual_investment = gp.quicksum(
 fuel_costs = gp.quicksum(
     boiler.U_biomass[t] * config.FUEL_PRICES["biomass"] +
     chp.U_gas[t] * config.FUEL_PRICES["gas"] +
-    hp.U_elec[t] * config.ELEC_PRICE
+    hp.U_elec[t] * ELEC_PRICE_VEC[t]
     for t in timesteps
 )
 
