@@ -37,8 +37,24 @@ def create_energy_demand_data():
         lambda dt: 2 if (dt in am_hols or dt.weekday() == 6) else (1 if dt.weekday() == 5 else 0))
 
     # 5. LOAD TEMPERATURES
-    df['ZH_Temp'] = pd.read_csv(base_path + 'Zurich_meteo_data_2025.csv')['temp'].values[:8760]
-    df['AM_Temp'] = pd.read_csv(base_path + 'Amsterdam_meteo_data_2025.csv')['temp'].values[:8760]
+    def get_averaged_temp(file_name):
+        # Load the full historical dataset
+        raw = pd.read_csv(base_path + file_name)
+        raw['time'] = pd.to_datetime(raw['time'])
+
+        # Group by Month, Day, and Hour and calculate the average temperature
+        # This creates a "typical" value for every hour of the year
+        avg_series = raw.groupby([
+            raw['time'].dt.month,
+            raw['time'].dt.day,
+            raw['time'].dt.hour
+        ])['temp'].mean()
+
+        return avg_series.values
+
+    # Apply the averaging logic to both cities
+    df['ZH_Temp'] = get_averaged_temp('Zurich_meteo_raw_data.csv')
+    df['AM_Temp'] = get_averaged_temp('Amsterdam_meteo_raw_data.csv')
 
     # 6. HEATING/COOLING LOOKUP FUNCTION
     def process_thermal_file(file_name, threshold, mode='heating'):

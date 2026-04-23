@@ -6,9 +6,9 @@ class PitThermalEnergyStorage:
                  capex_per_mwh=35, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
         """
         Args:
-            e_min_market: Minimum installable energy capacity (MWh) [cite: 2058]
-            e_max_market: Maximum installable energy capacity (MWh) [cite: 2058]
-            capex_per_mwh: Investment cost per unit of energy capacity [cite: 777, 1905]
+            e_min_market: Minimum installable energy capacity (MWh)
+            e_max_market: Maximum installable energy capacity (MWh)
+            capex_per_mwh: Investment cost per unit of energy capacity
             loss_rate: Hourly self-discharge rate (lambda)
             eta_charge: Charging efficiency (eta^c)
             eta_disch: Discharging efficiency (eta^d)
