@@ -20,7 +20,7 @@ CITY_CONFIG = {
     "Zurich": {
         "heat_col": "Zurich_Total_Heating_MWh",
         "cool_col": "Zurich_Total_Cooling_MWh",
-        "elec_price_col": "Swiss_DAM_Price_Avg"  # Averaged profile for Switzerland
+        "elec_price_col": "Swiss_DAM_Price_2025"  # Averaged profile for Switzerland
     },
     "Amsterdam": {
         "heat_col": "Amsterdam_Total_Heating_MWh",
