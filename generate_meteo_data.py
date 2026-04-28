@@ -17,15 +17,12 @@ station_id = station_list.index[0]
 print("Using station:", station_id)
 
 # Time period
-start = datetime(2005, 1, 1)
+start = datetime(2025, 1, 1)
 end = datetime(2025, 12, 31, 23)
 
 # Fetch hourly data
 data = hourly(station_id, start, end).fetch()  # only Hourly still needs .fetch()
 
-# DISREGARD FEBRUARY 29th ONLY
-# we remove the extra day from leap years but keep the rest of the year's data in order to be alligned
-data = data[~((data.index.month == 2) & (data.index.day == 29))]
 
 # Check the data
 print(data.head())
@@ -44,7 +41,7 @@ station_id = station_list.index[0]
 print("Using station:", station_id)
 
 # Time period
-start = datetime(2005, 1, 1)
+start = datetime(2025, 1, 1)
 end = datetime(2025, 12, 31, 23)
 
 # Fetch hourly data
