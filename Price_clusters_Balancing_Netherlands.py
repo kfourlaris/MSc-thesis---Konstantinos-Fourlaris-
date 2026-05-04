@@ -1,134 +1,132 @@
 import pandas as pd
 import numpy as np
-import glob
-import os
 from sklearn.preprocessing import RobustScaler
 from sklearn_extra.cluster import KMedoids
-import matplotlib.pyplot as plt
 
-# ==========================================
-# 1. PATH CONFIGURATION
-# ==========================================
-input_folder = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/"
-file_pattern = os.path.join(input_folder, "settlement_prices_*.csv")
-output_path = os.path.join(input_folder, "stochastic_price_scenarios.csv")
+# =================================================================
+# 1. CONFIGURATION
+# =================================================================
+FILE_PATHS = [
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_201812312300_201912312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_201912312300_202012312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_202012312300_202112312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_202112312300_202212312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_202212312300_202312312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_202312312300_202412312300.csv',
+    '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_202412312300_202512312300.csv'
+]
+N_SCENARIOS = 5
 
-# ==========================================
-# 2. LOAD DATA
-# ==========================================
-files = glob.glob(file_pattern)
+TIME_COL = 'Timeinterval Start Loc'
+UP_PRICE_COL = 'Price Dispatch Up'
+DOWN_PRICE_COL = 'Price Dispatch Down'
 
-if not files:
-    print(f"CRITICAL ERROR: No files found at {file_pattern}")
-else:
-    print(f"Found {len(files)} files. Loading data...")
 
-df_list = []
-for f in files:
-    # TenneT files use ';' separator and '.' for decimals
-    temp_df = pd.read_csv(f, sep=';', decimal='.')
-    df_list.append(temp_df)
+def run_stochastic_clustering_nl():
+    all_years_raw_data = []
+    year_features = []
+    valid_file_names = []
 
-df = pd.concat(df_list, ignore_index=True)
+    print(f"Starting analysis on {len(FILE_PATHS)} CSV files using K-Medoids...")
 
-# ==========================================
-# 3. PREPROCESSING & CLEANING (0-Fill Logic)
-# ==========================================
-print("Preprocessing data and filling empty cells with 0...")
-df['Timeinterval Start Loc'] = pd.to_datetime(df['Timeinterval Start Loc'])
-df['Date'] = df['Timeinterval Start Loc'].dt.date
+    for file in FILE_PATHS:
+        try:
+            # Read the csv
+            df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
+            df.columns = df.columns.str.strip()
+            TIME_COL = [c for c in df.columns if 'Timeinterval Start Loc' in c][0]
+            UP_PRICE_COL = [c for c in df.columns if 'Price Dispatch Up' in c][0]
+            DOWN_PRICE_COL = [c for c in df.columns if 'Price Dispatch Down' in c][0]
+            print(f"✅ Successfully loaded: {file.split('/')[-1]}")
+        except Exception as e:
+            print(f"❌ Could not read file {file}: {e}")
+            continue
 
-# PER YOUR INSTRUCTION: Treat empty cells as 0
-# We fill both the Dispatch prices AND the general Imbalance prices (Shortage/Surplus)
-cols_to_fix = ['Price Dispatch Up', 'Price Dispatch Down', 'Price Shortage', 'Price Surplus']
-for col in cols_to_fix:
-    df[col] = df[col].fillna(0)
+        # A. Filter Leap Year (Feb 29) to keep years uniform at 35,040 rows
+        df[TIME_COL] = pd.to_datetime(df[TIME_COL], format='ISO8601')
+        df = df[~((df[TIME_COL].dt.month == 2) & (df[TIME_COL].dt.day == 29))]
 
-# HANDLING DUPLICATES & EXTRA HOURS:
-# Group by Date and Isp to average Daylight Savings duplicates
-df_clean = df.groupby(['Date', 'Isp'], as_index=False).agg({
-    'Price Dispatch Up': 'mean',
-    'Price Dispatch Down': 'mean'
-})
+        # B. Clean and subset prices (Up and Down Columns) - At NaN display zeros
+        price_subset = df[[UP_PRICE_COL, DOWN_PRICE_COL]].apply(pd.to_numeric, errors='coerce').fillna(0.0)
+        year_values = price_subset.values[:35040, :]
 
-# ENSURE STANDARD 24-HOUR DAY:
-# We only take ISPs 1-96. Because we filled NaNs with 0,
-# almost every day will now be "complete".
-df_clean = df_clean[df_clean['Isp'] <= 96]
+        if len(year_values) < 35040:
+            print(f"⚠️ Warning: {file} has insufficient rows ({len(year_values)}). Skipping.")
+            continue
 
-# ==========================================
-# 4. RESHAPING TO DAILY PROFILES
-# ==========================================
-print("Reshaping to 96-quarter profiles...")
-pivot_up = df_clean.pivot(index='Date', columns='Isp', values='Price Dispatch Up')
-pivot_down = df_clean.pivot(index='Date', columns='Isp', values='Price Dispatch Down')
+        # C. Feature Extraction (Statistical 'Fingerprint' remains identical)
+        features = []
+        for c in [0, 1]:
+            series = year_values[:, c]
+            features.extend([
+                np.mean(series),
+                np.std(series),
+                np.percentile(series, 95),
+                np.percentile(series, 5)
+            ])
+            features.extend([np.mean(m) for m in np.array_split(series, 12)])
 
-# Now dropna will only remove days where the entire date was missing from the file
-pivot_up = pivot_up.dropna()
-pivot_down = pivot_down.dropna()
+        all_years_raw_data.append(year_values)
+        year_features.append(features)
+        valid_file_names.append(file.split('/')[-1])
 
-common_dates = pivot_up.index.intersection(pivot_down.index)
-print(f"Total 24h days found for clustering: {len(common_dates)}")
+    if len(all_years_raw_data) < N_SCENARIOS:
+        print(f"ERROR: Only {len(all_years_raw_data)} valid years found. Need {N_SCENARIOS}.")
+        return None
 
-# Create the [Days x 192] Matrix
-data_matrix = np.hstack([
-    pivot_up.loc[common_dates].values,
-    pivot_down.loc[common_dates].values
-])
+    # 3. ROBUST CLUSTERING
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(year_features)
+    kmedoids = KMedoids(n_clusters=N_SCENARIOS, random_state=42, method='pam').fit(X_scaled)
 
-# ==========================================
-# 5. SCALING & K-MEDOIDS CLUSTERING
-# ==========================================
-scaler = RobustScaler()
-data_scaled = scaler.fit_transform(data_matrix)
+    probabilities = np.bincount(kmedoids.labels_, minlength=N_SCENARIOS) / len(all_years_raw_data)
 
-print(f"Clustering {len(common_dates)} days into 10 scenarios...")
-n_clusters = 10
-kmed = KMedoids(n_clusters=n_clusters, metric='euclidean', init='k-medoids++', random_state=42)
-kmed.fit(data_scaled)
+    # 4. RESULTS & EXCEL EXPORT
+    print("\n" + "=" * 50 + "\nSTOCHASTIC K-MEDOIDS REPRESENTATIVE YEARS (NL)\n" + "=" * 50)
 
-# ==========================================
-# 6. EXTRACT RESULTS & PROBABILITIES
-# ==========================================
-labels = kmed.labels_
-cluster_counts = np.bincount(labels)
-probabilities = cluster_counts / len(labels)
+    # Prepare the Main Data Sheet
+    export_data = {'Quarter': np.arange(1, 35041)}
+    prob_data = []
 
-medoid_indices = kmed.medoid_indices_
-representative_dates = common_dates[medoid_indices]
+    for i, idx in enumerate(kmedoids.medoid_indices_):
+        s_id = i + 1
+        scenario_file = valid_file_names[idx]
+        prob = probabilities[i]
 
-# Final DataFrame structure
-scenarios = pd.DataFrame(data_matrix[medoid_indices])
-up_cols = [f'Up_ISP_{i}' for i in range(1, 97)]
-down_cols = [f'Down_ISP_{i}' for i in range(1, 97)]
-scenarios.columns = up_cols + down_cols
+        print(f"SCENARIO {s_id}: {scenario_file} | Probability: {prob:.2%}")
 
-scenarios.insert(0, 'Probability', probabilities)
-scenarios.insert(1, 'Date', representative_dates)
+        # Add columns using the exact naming convention for compatibility
+        export_data[f'S{s_id}_Balancing_Up'] = all_years_raw_data[idx][:, 0]
+        export_data[f'S{s_id}_Balancing_Down'] = all_years_raw_data[idx][:, 1]
 
-scenarios.to_csv(output_path, index=False)
+        # Prepare the Probabilities Sheet data
+        prob_data.append({
+            'Scenario': f"Scenario {s_id}",
+            'Historical_Source': scenario_file,
+            'Probability': prob
+        })
 
-print("\n" + "=" * 40)
-print("SUCCESS: CLUSTERS GENERATED USING 0-DEFAULT LOGIC")
-print("=" * 40)
-for i, prob in enumerate(probabilities):
-    print(f"Scenario {i}: {representative_dates[i]} | Probability: {prob:.2%}")
+    # Convert to DataFrames
+    df_main = pd.DataFrame(export_data)
+    df_probs = pd.DataFrame(prob_data)
 
-print(f"\nCSV saved to: {output_path}")
+    # Define the output path
+    output_file = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/Representative_NL_Price_Scenarios.xlsx"
 
-# ==========================================
-# 7. VISUALIZATION
-# ==========================================
-fig, axes = plt.subplots(5, 2, figsize=(15, 12))
-axes = axes.flatten()
+    # Save with the two required sheets: 'Price_Data' and 'Probabilities'
+    try:
+        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+            df_main.to_excel(writer, sheet_name='Price_Data', index=False)
+            df_probs.to_excel(writer, sheet_name='Probabilities', index=False)
 
-for i in range(n_clusters):
-    ax = axes[i]
-    ax.plot(range(1, 97), data_matrix[medoid_indices[i], :96], label='Up', color='green', alpha=0.6)
-    ax.plot(range(1, 97), data_matrix[medoid_indices[i], 96:], label='Down', color='red', alpha=0.6)
-    ax.set_title(f"Cluster {i}: {representative_dates[i]} ({probabilities[i]:.1%})")
-    ax.grid(True, alpha=0.2)
-    if i == 0: ax.legend()
+        print(f"\n✅ SUCCESS: Result saved to {output_file}")
+    except Exception as e:
+        print(f"❌ Error saving Excel file: {e}")
+        # Fallback to current directory if the long path is restricted
+        df_main.to_excel("Representative_NL_Scenarios_LCL.xlsx", index=False)
+        print("Saved a local copy: Representative_NL_Scenarios_LCL.xlsx")
 
-plt.tight_layout()
-plt.show()
+    return True
+
+if __name__ == "__main__":
+    run_stochastic_clustering_nl()

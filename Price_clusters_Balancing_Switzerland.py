@@ -125,7 +125,7 @@ if __name__ == "__main__":
             'Quarter': np.arange(1, 35041)
         }
 
-        # Add Up and Down prices for each of the 5 scenarios
+        # Add Up and Down prices for each of the N scenarios
         for i, s in enumerate(scenarios):
             s_id = i + 1
             # Column 2, 4, 6, 8, 10: Up Prices
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         df_probs = pd.DataFrame(prob_data)
 
         # 4. Save to a single Excel file with two tabs
-        output_file = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Zurich/Representative_Price_Scenarios.xlsx"
+        output_file = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Zurich/Representative_CH_Price_Scenarios.xlsx"
 
         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
             df_main.to_excel(writer, sheet_name='Price_Data', index=False)
