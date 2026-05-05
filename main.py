@@ -25,13 +25,15 @@ df_demand = pd.read_excel(config.DEMAND_DATA_PATH)
 df_prices = pd.read_excel(config.PRICE_DATA_PATH)
 
 # Get the correct column name from config mapping
-selected_col = config.CITY_CONFIG[config.SELECTED_CITY]["heat_col"]
+selected_col_heat = config.CITY_CONFIG[config.SELECTED_CITY]["heat_col"]
+selected_col_cool = config.CITY_CONFIG[config.SELECTED_CITY]["cool_col"]
 selected_elec_col = config.CITY_CONFIG[config.SELECTED_CITY]["elec_price_col"]
 
 # Extract the hourly values as a list (8760 values)
 # Note: Since your model uses kW, and the file is in MWh,
 # 1 MWh in one hour = 1000 kW power.
-HEAT_DEMAND_VEC = (df_demand[selected_col] * 1000).tolist()
+HEAT_DEMAND_VEC = (df_demand[selected_col_heat] * 1000).tolist()
+COOLING_DEMAND_VEC = (df_demand[selected_col_cool] * 1000).tolist()
 peak_demand_kw = max(HEAT_DEMAND_VEC)
 ELEC_PRICE_VEC = (df_prices[selected_elec_col] / 1000).tolist()
 
@@ -62,7 +64,12 @@ tes.add_constraints(model, timesteps, hp_instance=hp, peak_demand_kw=peak_demand
 model.addConstrs(
     (gp.quicksum(tech.V_heat[t] for tech in technologies) + tes.V_disch[t] - tes.U_charge[t] == HEAT_DEMAND_VEC[t]
      for t in timesteps),
-    name="Global_Demand_Balance"
+    name="Global_Heat_Demand_Balance"
+)
+model.addConstrs(
+    (gp.quicksum(tech.V_cool[t] for tech in technologies if hasattr(tech, 'V_cool')) == COOLING_DEMAND_VEC[t]
+     for t in timesteps),
+    name="Global_Cooling_Demand_Balance"
 )
 
 # --- STEP 4: OBJECTIVE FUNCTION ---
