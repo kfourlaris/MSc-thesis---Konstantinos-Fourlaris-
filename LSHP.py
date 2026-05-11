@@ -1,14 +1,14 @@
 from gurobipy import GRB
 
 class LargeScaleHeatPump:
-    def __init__(self, name, p_min_market=500, p_max_market=50000000,
-                 min_load_fraction=0.25, capex_per_kw_th=600, opex_per_kw_th=15, eff=6):
+    def __init__(self, name, p_min_market=500, p_max_market=500000,
+                 min_load_fraction=0.15, capex_per_kw_th=1200, opex_per_kw_th=24, eff=6):
         """
         Args:
             p_min_market: Smallest available capacity (kW_th)
             p_max_market: Largest available capacity (kW_th)
             min_load_fraction: delta_k (e.g., 0.15 for 15% minimum thermal output)
-            capex_per_kw_th: Investment cost per unit of thermal capacity (P_k)
+            capex_per_kw_th: Investment cost per unit of thermal capacity (P_k) (Danish Energy Agency - Technology Data - Generation of Electricity and District Heating)
             opex_per_kw_th: Annual fixed maintenance cost per unit of capacity
         """
         self.name = name
@@ -53,10 +53,14 @@ class LargeScaleHeatPump:
 
         # Combined Loop for all hourly constraints
         for t in timesteps:
-            # 2. Mutual exclusion logic
+            # 2.a Ensure that unit is on if either mode is active
+            model.addConstr(self.y_heat[t] <= self.y_on[t], name=f"on_heat_{t}")
+            model.addConstr(self.y_cool[t] <= self.y_on[t], name=f"on_cool_{t}")
+
+            # 2.b THE NEW LOGIC
             model.addConstr(
-                self.y_on[t] == self.y_heat[t] + self.y_cool[t],
-                name=f"mode_logic_{self.name}_{t}"
+                self.V_heat[t] <= 120000 * self.y_cool[t] + self.P_cap * (1 - self.y_cool[t]),
+                name=f"simultaneous_limit_{self.name}_{t}"
             )
 
             # 3. Performance constraint (The Electricity Bridge)

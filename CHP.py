@@ -1,15 +1,15 @@
 from gurobipy import GRB
 
 class CHP:
-    def __init__(self, name, efficiency_el=0.35, efficiency_th=0.45,
-                 p_min_market=500, p_max_market=100000000,
-                 min_load_fraction=0.15, capex_per_kw_el=800, opex_per_kw_el=20):
+    def __init__(self, name, efficiency_el=0.35, efficiency_th=0.65,
+                 p_min_market=50, p_max_market=1000000,
+                 min_load_fraction=0.15, capex_per_kw_el=3000, opex_per_kw_el=60):
         """
         Args:
-            efficiency_el: Electrical efficiency (eta_el)
-            efficiency_th: Thermal efficiency (eta_th)
-            p_min_market: Smallest capacity based on electrical output (kW_el)
-            p_max_market: Largest capacity based on electrical output (kW_el)
+            efficiency_el: Electrical efficiency (eta_el) (https://www.futuremarketinsights.com/reports/combined-heat-and-power-chp-systems-market)
+            efficiency_th: Thermal efficiency (eta_th) (https://www.futuremarketinsights.com/reports/combined-heat-and-power-chp-systems-market)
+            p_min_market: Smallest capacity based on electrical output (kW_el) 50 KW
+            p_max_market: Largest capacity based on electrical output (kW_el) 1 GW
             min_load_fraction: delta_k (fraction of rated electrical power)
         """
         self.name = name

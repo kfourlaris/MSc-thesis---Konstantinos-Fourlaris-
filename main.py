@@ -40,7 +40,7 @@ ELEC_PRICE_VEC = (df_prices[selected_elec_col] / 1000).tolist()
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
 timesteps = range(8760)  # Hourly resolution for one year
-model.setParam('MIPGap', 0.003) #for making it run faster
+model.setParam('MIPGap', 0.1) #for making it run faster
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 boiler = BiomassBoiler("BB_Zurich")
@@ -76,7 +76,7 @@ model.addConstrs(
 # Minimize Total Annual Cost = Investment + OPEX + Fuel Costs - Electricity Revenue
 annual_investment = gp.quicksum(
     tech.P_cap * (tech.capex_per_kw * config.ANNUITY_FACTOR + tech.opex_per_kw) for tech in technologies
-) + (tes.E_cap * tes.capex_per_mwh * config.ANNUITY_FACTOR)
+) + (tes.E_cap * tes.capex_per_kwh * config.ANNUITY_FACTOR)
 
 # Operational costs (X variables) summed over the year
 fuel_costs = gp.quicksum(

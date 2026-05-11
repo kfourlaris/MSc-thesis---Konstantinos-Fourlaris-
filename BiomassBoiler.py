@@ -2,16 +2,17 @@ from gurobipy import GRB
 
 
 class BiomassBoiler:
-    def __init__(self, name, efficiency=0.85,
-                 p_min_market=100, p_max_market=50000000,
-                 min_load_fraction=0.10, capex_per_kw=250, opex_per_kw=5):
+    def __init__(self, name, efficiency=0.86,
+                 p_min_market=50, p_max_market=50000,
+                 min_load_fraction=0.10, capex_per_kw=350, opex_per_kw=7):
         """
         Args:
-            p_min_market: Smallest available boiler size (e.g., 100 kW)
+            p_min_market: Smallest available boiler size (e.g., 50 kW)
             p_max_market: Largest available boiler size (e.g., 50 MW)
+            efficiency: Efficiency of the boiler (https://doi.org/10.1016/j.renene.2026.125272 page 5)
             min_load_fraction: delta_k (e.g., 0.10 for 10% idle/max load)
-            capex_per_kw: Investment cost per unit of capacity
-            opex_per_kw: Annual maintenance cost per unit of capacity
+            capex_per_kw: Investment cost per unit of capacity (250-450 for big ones)
+            opex_per_kw: Annual maintenance cost per unit of capacity (always 2% of Capex)
         """
         self.name = name
         self.eta = efficiency
