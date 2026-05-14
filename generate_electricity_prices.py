@@ -76,13 +76,16 @@ def generate_consolidated_excel(base_path, ch_file, nl_file):
         dutch_2025_values = process_netherlands_2025(nl_file)
 
         # 3. Combine into final DataFrame
+        # add a grid tarrif
+        grid_tarrif_CH = 49
+        grid_tarrif_NL = 30
         # Check if arrays are same length (8760)
         min_len = min(len(swiss_2025_values), len(dutch_2025_values))
 
         combined_df = pd.DataFrame({
             'Hour_of_the_Year': range(1, min_len + 1),
-            'Swiss_DAM_Price_2025': swiss_2025_values[:min_len],
-            'Dutch_DAM_Price_2025': dutch_2025_values[:min_len]
+            'Swiss_DAM_Price_2025': swiss_2025_values[:min_len] + grid_tarrif_CH,
+            'Dutch_DAM_Price_2025': dutch_2025_values[:min_len] + grid_tarrif_NL
         })
 
         # 4. Save to Excel
