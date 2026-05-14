@@ -29,6 +29,15 @@ CITY_CONFIG = {
     }
 }
 
+# --- EXPERIMENT CONTROL PANEL ---
+# Set to True to enable, False to disable
+TECH_SWITCHES = {
+    "BiomassBoiler": True,
+    "CHP": True,
+    "LargeScaleHeatPump": True,
+    "TES": True
+}
+
 # 2. Load Electricity Prices
 df_prices = pd.read_excel(PRICE_DATA_PATH)
 # We convert EUR/MWh to EUR/kWh if your model uses kWh for energy (divide by 1000)
