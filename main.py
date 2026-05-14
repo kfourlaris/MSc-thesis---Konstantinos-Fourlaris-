@@ -114,27 +114,39 @@ model.optimize()
 
 if model.Status == GRB.OPTIMAL:
     print(f"Optimal Total Cost: {model.ObjVal} Euro")
-    print(f"Installed Biomass Boiler Capacity: {all_techs['BiomassBoiler'].P_cap.X} kW")
-    print(f"Installed CHP Capacity: {all_techs['CHP'].P_cap.X} kW")
-    print(f"Installed LSHP Capacity: {all_techs['LargeScaleHeatPump'].P_cap.X} kW")
-    print (f"Installed TES Capacity: {tes.E_cap.X:.2f} kWh")
 
-    # Existing print for Energy Capacity
-    tes_energy_kwh = tes.E_cap.X
-    print(f"Installed TES Capacity: {tes_energy_kwh:.2f} kWh")
+    # Check Biomass Boiler
+    if config.TECH_SWITCHES.get('BiomassBoiler'):
+        print(f"Installed Biomass Boiler Capacity: {all_techs['BiomassBoiler'].P_cap.X:.2f} kW")
+
+    # Check CHP
+    if config.TECH_SWITCHES.get('CHP'):
+        print(f"Installed CHP Capacity: {all_techs['CHP'].P_cap.X:.2f} kW")
+
+    # Check Heat Pump
+    if config.TECH_SWITCHES.get('LargeScaleHeatPump'):
+        print(f"Installed LSHP Capacity: {all_techs['LargeScaleHeatPump'].P_cap.X:.2f} kW")
+
+    # Check TES
+    if config.TECH_SWITCHES.get('TES'):
+        print(f"Installed TES Capacity: {tes.E_cap.X:.2f} kWh")
+        tes_energy_kwh = tes.E_cap.X
 
     # --- NEW: VOLUME CALCULATION ---
     # Define your Delta T (DT).
     # Example: If using 65°C supply and 25°C return (4th Gen target), DT = 40.
     # The paper uses 60°C for their cavern.
-    delta_t = config.T_SINK - config.T_RETURN  # Replace with your specific DT value
+        delta_t = config.T_SINK - config.T_RETURN  # Replace with your specific DT value
 
     # Constant for water: 1.162 Wh per kg per degree Celsius
     # Convert to kWh: 0.001162 kWh / (kg * °C)
     # Volume in m3 (assuming 1000kg/m3)
-    tes_volume_m3 = tes_energy_kwh / (1.162 * delta_t)
+        tes_volume_m3 = tes_energy_kwh / (1.162 * delta_t)
 
-    print(f"Required TES Volume: {tes_volume_m3:.2f} m³")
+        print(f"Required TES Volume: {tes_volume_m3:.2f} m³")
+    else:
+        print("TES is disabled for this run.")
+
 
 if model.Status == GRB.OPTIMAL:
     t_plot = range(8760)
@@ -146,12 +158,21 @@ if model.Status == GRB.OPTIMAL:
     def create_heat_dispatch_figure(period, title):
         plt.figure(figsize=(12, 6))
 
-        # Accessing variables via all_techs dictionary
-        v_boiler = [all_techs['BiomassBoiler'].V_heat[i].X / 1000 if 'BiomassBoiler' in all_techs else 0 for i in
-                    period]
-        v_chp = [all_techs['CHP'].V_heat[i].X / 1000 if 'CHP' in all_techs else 0 for i in period]
-        v_hp = [all_techs['LargeScaleHeatPump'].V_heat[i].X / 1000 if 'LargeScaleHeatPump' in all_techs else 0 for i in
-                period]
+        # Check if technology is enabled before accessing .X, otherwise use a list of zeros
+        if config.TECH_SWITCHES.get("BiomassBoiler"):
+            v_boiler = [all_techs['BiomassBoiler'].V_heat[i].X / 1000 for i in period]
+        else:
+            v_boiler = [0] * len(period)
+
+        if config.TECH_SWITCHES.get("CHP"):
+            v_chp = [all_techs['CHP'].V_heat[i].X / 1000 for i in period]
+        else:
+            v_chp = [0] * len(period)
+
+        if config.TECH_SWITCHES.get("LargeScaleHeatPump"):
+            v_hp = [all_techs['LargeScaleHeatPump'].V_heat[i].X / 1000 for i in period]
+        else:
+            v_hp = [0] * len(period)
 
         plt.stackplot([t_plot[i] for i in period],
                       v_boiler, v_chp, v_hp,
@@ -170,69 +191,69 @@ if model.Status == GRB.OPTIMAL:
 
 
     create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
-    create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: January Zoom (Hours 288-624)')
-    create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: August Zoom (Hours 5160-5496)')
+    create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: January Zoom')
+    create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: August Zoom')
 
     # --- 2. TES OPERATION PLOTS ---
-    # Note: 'tes' variable name remains the same as per your print statement
-    charge_vals = [-tes.U_charge[t].X / 1000 for t in t_plot]
-    disch_vals = [tes.V_disch[t].X / 1000 for t in t_plot]
-    soc_vals = [tes.E_state[t].X / 1000 for t in t_plot]
+    # Only calculate and show TES plots if TES technology exists in the run
+    if config.TECH_SWITCHES.get("TES"):
+        charge_vals = [-tes.U_charge[t].X / 1000 for t in t_plot]
+        disch_vals = [tes.V_disch[t].X / 1000 for t in t_plot]
+        soc_vals = [tes.E_state[t].X / 1000 for t in t_plot]
 
 
-    def create_tes_double_subplot(period, title_suffix):
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
-        p_range = [t_plot[i] for i in period]
+        def create_tes_double_subplot(period, title_suffix):
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+            p_range = [t_plot[i] for i in period]
 
-        ax1.fill_between(p_range, [disch_vals[i] for i in period], label='Discharging (+)', color='orange', alpha=0.7)
-        ax1.fill_between(p_range, [charge_vals[i] for i in period], label='Charging (-)', color='navy', alpha=0.7)
-        ax1.axhline(0, color='black', linewidth=1)
-        ax1.set_ylabel('Power Flow (MW)')
-        ax1.set_title(f'TES Operation: Charging vs. Discharging ({title_suffix})')
-        ax1.legend(loc='upper right')
-        ax1.grid(alpha=0.3)
+            ax1.fill_between(p_range, [disch_vals[i] for i in period], label='Discharging (+)', color='orange',
+                             alpha=0.7)
+            ax1.fill_between(p_range, [charge_vals[i] for i in period], label='Charging (-)', color='navy', alpha=0.7)
+            ax1.axhline(0, color='black', linewidth=1)
+            ax1.set_ylabel('Power Flow (MW)')
+            ax1.set_title(f'TES Operation ({title_suffix})')
+            ax1.legend(loc='upper right')
+            ax1.grid(alpha=0.3)
 
-        ax2.plot(p_range, [soc_vals[i] for i in period], color='green', linewidth=1.5, label='Stored Energy')
-        ax2.fill_between(p_range, [soc_vals[i] for i in period], color='green', alpha=0.1)
-        ax2.set_ylabel('Stored Energy (MWh)')
-        ax2.set_xlabel('Hour of the Year')
-        ax2.set_title(f'TES Energy Level (SoC) ({title_suffix})')
-        ax2.legend(loc='upper right')
-        ax2.grid(alpha=0.3)
+            ax2.plot(p_range, [soc_vals[i] for i in period], color='green', linewidth=1.5, label='Stored Energy')
+            ax2.fill_between(p_range, [soc_vals[i] for i in period], color='green', alpha=0.1)
+            ax2.set_ylabel('Stored Energy (MWh)')
+            ax2.set_xlabel('Hour of the Year')
+            ax2.legend(loc='upper right')
+            ax2.grid(alpha=0.3)
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()
 
 
-    create_tes_double_subplot(t_plot, 'Full Year')
-    create_tes_double_subplot(jan_slice, 'January Zoom')
-    create_tes_double_subplot(aug_slice, 'August Zoom')
-
+        create_tes_double_subplot(t_plot, 'Full Year')
+        create_tes_double_subplot(jan_slice, 'January Zoom')
+        create_tes_double_subplot(aug_slice, 'August Zoom')
 
     # --- 3. COOLING DISPATCH PLOTS ---
-    def create_cool_dispatch_figure(period, title):
-        plt.figure(figsize=(12, 6))
+    # Only show cooling plots if the Heat Pump is enabled
+    if config.TECH_SWITCHES.get("LargeScaleHeatPump"):
+        def create_cool_dispatch_figure(period, title):
+            plt.figure(figsize=(12, 6))
 
-        # Accessing cooling via all_techs['LargeScaleHeatPump']
-        v_cool = [all_techs['LargeScaleHeatPump'].V_cool[i].X / 1000 if 'LargeScaleHeatPump' in all_techs else 0 for i
-                  in period]
+            v_cool = [all_techs['LargeScaleHeatPump'].V_cool[i].X / 1000 for i in period]
 
-        plt.stackplot([t_plot[i] for i in period],
-                      v_cool,
-                      labels=['Heat Pump'],
-                      colors=['#e74c3c'], alpha=0.8)
+            plt.stackplot([t_plot[i] for i in period],
+                          v_cool,
+                          labels=['Heat Pump'],
+                          colors=['#e74c3c'], alpha=0.8)
 
-        plt.plot([t_plot[i] for i in period], [COOLING_DEMAND_VEC[i] / 1000 for i in period],
-                 color='black', linestyle='--', linewidth=2, label='Total Demand')
-        plt.title(title)
-        plt.xlabel('Hour of the Year')
-        plt.ylabel('Power (MW)')
-        plt.legend(loc='upper right')
-        plt.grid(axis='y', linestyle=':', alpha=0.6)
-        plt.tight_layout()
-        plt.show()
+            plt.plot([t_plot[i] for i in period], [COOLING_DEMAND_VEC[i] / 1000 for i in period],
+                     color='black', linestyle='--', linewidth=2, label='Total Demand')
+            plt.title(title)
+            plt.xlabel('Hour of the Year')
+            plt.ylabel('Power (MW)')
+            plt.legend(loc='upper right')
+            plt.grid(axis='y', linestyle=':', alpha=0.6)
+            plt.tight_layout()
+            plt.show()
 
 
-    create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
-    create_cool_dispatch_figure(jan_slice, 'Cool Dispatch: January Zoom (Hours 288-624)')
-    create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom (Hours 5160-5496)')
+        create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
+        create_cool_dispatch_figure(jan_slice, 'Cool Dispatch: January Zoom')
+        create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom')
