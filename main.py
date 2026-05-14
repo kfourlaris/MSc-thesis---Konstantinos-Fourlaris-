@@ -53,7 +53,7 @@ technologies = [boiler, chp, hp]
 for tech in technologies:
     tech.add_variables(model, timesteps)
     if isinstance(tech, LargeScaleHeatPump):
-        tech.add_constraints(model, timesteps, config.COP_VEC) # Pass cop_vector here
+        tech.add_constraints(model, timesteps, config.COP_VEC, config.COP_COOL_VEC)
     else:
         tech.add_constraints(model, timesteps)
 tes.add_variables(model, timesteps)

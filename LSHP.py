@@ -2,7 +2,7 @@ from gurobipy import GRB
 
 class LargeScaleHeatPump:
     def __init__(self, name, p_min_market=500, p_max_market=500000,
-                 min_load_fraction=0.15, capex_per_kw_th=1200, opex_per_kw_th=24, eff=6):
+                 min_load_fraction=0.15, capex_per_kw_th=1200, opex_per_kw_th=24):
         """
         Args:
             p_min_market: Smallest available capacity (kW_th)
@@ -17,7 +17,6 @@ class LargeScaleHeatPump:
         self.delta = min_load_fraction
         self.capex_per_kw = capex_per_kw_th
         self.opex_per_kw = opex_per_kw_th
-        self.eff = eff
 
         # Placeholders for Variables (Matching my proposal)
         self.P_cap = None      # Design size (P_k)
@@ -42,7 +41,7 @@ class LargeScaleHeatPump:
         self.V_cool = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"V_C_{self.name}")
         self.U_elec = model.addVars(timesteps, lb=0, vtype=GRB.CONTINUOUS, name=f"U_E_{self.name}")
 
-    def add_constraints(self, model, timesteps, cop_vector):
+    def add_constraints(self, model, timesteps, cop_vector, cop_cool_vector):
         """
         Args:
             cop_vector: A list or dictionary of 8760 pre-calculated hourly COP values.
@@ -66,7 +65,7 @@ class LargeScaleHeatPump:
             # 3. Performance constraint (The Electricity Bridge)
             # No generator expression here; we handle it one hour at a time
             model.addConstr(
-                self.U_elec[t] == (self.V_heat[t] / cop_vector[t]) + (self.V_cool[t] / self.eff),
+                self.U_elec[t] == (self.V_heat[t] / cop_vector[t]) + (self.V_cool[t] / cop_cool_vector[t]),
                 name=f"elec_balance_{self.name}_{t}"
             )
 

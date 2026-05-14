@@ -41,19 +41,38 @@ DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
 # --- DATA GENERATION (Ambient Temperatures) ---
 # Here we would later load Zurich/Amsterdam Excel/CSV files
-T_source_hourly = 20 + 10 * np.sin(np.linspace(0, 2 * np.pi, 8760))
+monthly_temps = {
+    1: 4, 2: 2, 3: 5, 4: 7, 5: 12, 6: 14,
+    7: 17, 8: 18, 9: 15, 10: 11, 11: 7, 12: 4
+}
+
+# Create a full year time range for 2025
+time_index = pd.date_range(start='2025-01-01', periods=8760, freq='h')
+
+# Map the monthly averages to every hour
+T_source_hourly = np.array([monthly_temps[dt.month] for dt in time_index])
 
 # --- MATH FUNCTIONS ---
 def _calculate_annuity_factor(i, n):
     if i == 0: return 1 / n
     return (i * (1 + i)**n) / ((1 + i)**n - 1)
 
-def _calculate_regression_cop(T_s_vec, T_k):
+def _calculate_heating_cop(T_s_vec, T_k):
     dT = T_k - np.array(T_s_vec)
     # The Regression Formula from (https://doi.org/10.1016/j.rser.2020.110646) for R717 refrigerant
     cop = 0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684
     return np.maximum(cop, 1.0).tolist()
 
+def _calculate_cooling_cop(T_s_vec, T_k):
+    dT = T_k - np.array(T_s_vec)
+    # The Regression Formula from (https://doi.org/10.1016/j.rser.2020.110646) for R717 refrigerant
+    cop = (0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684)-1
+    return np.maximum(cop, 0.1).tolist()
+
+
 # --- EXPORTED VARIABLES ---
 ANNUITY_FACTOR = _calculate_annuity_factor(INTEREST_RATE, LIFESPAN)
-COP_VEC = _calculate_regression_cop(T_source_hourly, T_SINK)
+COP_VEC = _calculate_heating_cop(T_source_hourly, T_SINK)
+COP_COOL_VEC = _calculate_cooling_cop(T_source_hourly, T_SINK)
+
+
