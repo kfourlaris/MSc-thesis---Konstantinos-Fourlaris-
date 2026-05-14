@@ -71,7 +71,6 @@ class LargeScaleHeatPump:
             )
 
             # 3.1 HEATING: Upper & Lower Bounds
-            model.addConstr(self.V_heat[t] <= self.P_cap, name=f"up_bound_P_heat_{self.name}_{t}")
             model.addConstr(self.V_heat[t] <= self.y_heat[t] * self.p_max, name=f"up_bound_y_heat_{self.name}_{t}")
             model.addConstr(
                 self.V_heat[t] >= self.delta * self.P_cap - (1 - self.y_heat[t]) * self.p_max,
