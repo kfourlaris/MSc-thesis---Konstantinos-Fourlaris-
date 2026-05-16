@@ -60,10 +60,10 @@ class CHP:
         for t in timesteps:
             # UPPER BOUNDS
             # Electricity output capped by installed capacity and ON status
-            model.addConstr(self.V_elec[t] <= self.P_cap, name=f"up_bound_P_{self.name}_{t}")
-            model.addConstr(self.V_elec[t] <= self.y_on[t] * self.p_max, name=f"up_bound_y_{self.name}_{t}")
+            model.addConstr(self.V_heat[t] <= self.P_cap, name=f"up_bound_P_{self.name}_{t}")
+            model.addConstr(self.V_heat[t] <= self.y_on[t] * self.p_max, name=f"up_bound_y_{self.name}_{t}")
 
             # LOWER BOUND (Minimum load fraction delta)
             # If y=1, V_elec >= delta * P_cap. If y=0, V_elec >= 0 (via Big-M)
-            model.addConstr(self.V_elec[t] >= self.delta * self.P_cap - (1 - self.y_on[t]) * self.p_max,
+            model.addConstr(self.V_heat[t] >= self.delta * self.P_cap - (1 - self.y_on[t]) * self.p_max,
                             name=f"low_bound_{self.name}_{t}")

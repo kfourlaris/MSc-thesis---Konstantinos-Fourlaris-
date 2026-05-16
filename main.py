@@ -180,7 +180,7 @@ if model.Status == GRB.OPTIMAL:
                       colors=['#2ecc71', '#3498db', '#e74c3c'], alpha=0.8)
 
         plt.plot([t_plot[i] for i in period], [HEAT_DEMAND_VEC[i] / 1000 for i in period],
-                 color='black', linestyle='--', linewidth=2, label='Total Demand')
+                 color='black', linestyle='--', linewidth=2, label='Heat Demand')
         plt.title(title)
         plt.xlabel('Hour of the Year')
         plt.ylabel('Power (MW)')
@@ -191,8 +191,8 @@ if model.Status == GRB.OPTIMAL:
 
 
     create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
-    create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: January Zoom')
-    create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: August Zoom')
+    create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: 13-26 January 2025')
+    create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: 4-17 August 2025')
 
     # --- 2. TES OPERATION PLOTS ---
     # Only calculate and show TES plots if TES technology exists in the run
@@ -200,6 +200,8 @@ if model.Status == GRB.OPTIMAL:
         charge_vals = [-tes.U_charge[t].X / 1000 for t in t_plot]
         disch_vals = [tes.V_disch[t].X / 1000 for t in t_plot]
         soc_vals = [tes.E_state[t].X / 1000 for t in t_plot]
+        tes_capacity_mwh = tes.E_cap.X / 1000
+        soc_percent_vals = [(val / tes_capacity_mwh) * 100 for val in soc_vals]
 
 
         def create_tes_double_subplot(period, title_suffix):
@@ -215,9 +217,9 @@ if model.Status == GRB.OPTIMAL:
             ax1.legend(loc='upper right')
             ax1.grid(alpha=0.3)
 
-            ax2.plot(p_range, [soc_vals[i] for i in period], color='green', linewidth=1.5, label='Stored Energy')
-            ax2.fill_between(p_range, [soc_vals[i] for i in period], color='green', alpha=0.1)
-            ax2.set_ylabel('Stored Energy (MWh)')
+            ax2.plot(p_range, [soc_percent_vals[i] for i in period], color='green', linewidth=1.5, label='Stored Energy')
+            ax2.fill_between(p_range, [soc_percent_vals[i] for i in period], color='green', alpha=0.1)
+            ax2.set_ylabel('State of Charge (%)')
             ax2.set_xlabel('Hour of the Year')
             ax2.legend(loc='upper right')
             ax2.grid(alpha=0.3)
@@ -227,8 +229,8 @@ if model.Status == GRB.OPTIMAL:
 
 
         create_tes_double_subplot(t_plot, 'Full Year')
-        create_tes_double_subplot(jan_slice, 'January Zoom')
-        create_tes_double_subplot(aug_slice, 'August Zoom')
+        create_tes_double_subplot(jan_slice, '13-26 January 2025')
+        create_tes_double_subplot(aug_slice, '13-26 August 2025')
 
     # --- 3. COOLING DISPATCH PLOTS ---
     # Only show cooling plots if the Heat Pump is enabled

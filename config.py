@@ -44,7 +44,7 @@ df_prices = pd.read_excel(PRICE_DATA_PATH)
 elec_prices_kwh = df_prices[CITY_CONFIG[SELECTED_CITY]["elec_price_col"]].values / 1000
 
 # --- MARKET PRICES ---
-FUEL_PRICES = {"biomass": 0.05, "gas": 0.046}  # Euro/kWh
+FUEL_PRICES = {"biomass": 0.05, "gas": 0.056}  # Euro/kWh
 ELEC_REVENUE = 0.10  # Selling price for CHP electricity
 DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
