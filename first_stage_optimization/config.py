@@ -74,7 +74,7 @@ def _calculate_heating_cop(T_s_vec, T_k):
 
 def _calculate_cooling_cop(T_s_vec, T_k):
     dT = T_k - np.array(T_s_vec)
-    # The Regression Formula from (https://doi.org/10.1016/j.rser.2020.110646) for R717 refrigerant
+    # The Regression Formula from (https://doi.org/10.1016/j.rser.2020.110646) for R717 refrigerant - 1
     cop = (0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684)-1
     return np.maximum(cop, 0.1).tolist()
 

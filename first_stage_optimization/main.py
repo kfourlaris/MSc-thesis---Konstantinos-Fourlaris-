@@ -8,16 +8,16 @@ x = pd.DataFrame({'NAME':['FOURLARIS']})
 print(x)
 
 # Import the classes
-import config
-from CHP import CHP
-from BiomassBoiler import BiomassBoiler
-from LSHP import LargeScaleHeatPump
-from TES import PitThermalEnergyStorage
+from first_stage_optimization import config
+from first_stage_optimization.CHP import CHP
+from first_stage_optimization.BiomassBoiler import BiomassBoiler
+from first_stage_optimization.LSHP import LargeScaleHeatPump
+from first_stage_optimization.TES import PitThermalEnergyStorage
 
 # --- PRE-MODELING CHECK ---
 # Verify the data is flowing
 print(f"Using CRF: {config.ANNUITY_FACTOR:.4f}")
-print(f"Average COP: {sum(config.COP_VEC)/8760:.2f}")
+print(f"Average COP: {sum(config.COP_VEC) / 8760:.2f}")
 
 # --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
 # Load the final MWh file
