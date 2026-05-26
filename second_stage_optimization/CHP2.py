@@ -1,6 +1,5 @@
 from gurobipy import GRB
-import config_installed
-
+import config2
 
 class CHP15Min:
     def __init__(self, name, efficiency_el=0.35, efficiency_th=0.65, min_load_fraction=0.15):
@@ -16,14 +15,14 @@ class CHP15Min:
         self.delta = min_load_fraction
 
         # Pull technical details from your configuration dictionary
-        tech_data = config_installed.INSTALLED_TECH["CHP"]
+        tech_data = config2.INSTALLED_TECH["CHP"]
         self.P_cap = tech_data["P_cap"]  # Fixed electrical size (kW_el)
         self.capex_per_kw = tech_data["capex_per_kw"]
         self.opex_per_kw = tech_data["opex_per_kw"]
 
         # Pre-calculate the fixed annualized investment/maintenance cost overhead
         self.fixed_annual_cost = self.P_cap * (
-                self.capex_per_kw * config_installed.ANNUITY_FACTOR + self.opex_per_kw
+                self.capex_per_kw * config2.ANNUITY_FACTOR + self.opex_per_kw
         )
 
         # Multi-Scenario, 15-min dictionaries for tracking variables (timestep, scenario)

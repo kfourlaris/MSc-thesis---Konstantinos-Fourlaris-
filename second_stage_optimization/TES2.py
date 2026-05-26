@@ -1,6 +1,5 @@
 from gurobipy import GRB
-import config_installed
-
+import config2
 
 class PitThermalEnergyStorage15Min:
     def __init__(self, name, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
@@ -17,13 +16,13 @@ class PitThermalEnergyStorage15Min:
         self.lam_15min = 1 - ((1 - loss_rate) ** 0.25)
 
         # Pull technical details from your configuration dictionary
-        tech_data = config_installed.INSTALLED_TECH["TES"]
+        tech_data = config2.INSTALLED_TECH["TES"]
         self.E_cap = tech_data["E_cap"]  # Fixed energy capacity size (kWh)
         self.capex_per_kwh = tech_data["capex_per_kwh"]
 
         # Pre-calculate the fixed annualized investment/maintenance cost overhead
         self.fixed_annual_cost = self.E_cap * (
-                self.capex_per_kwh * config_installed.ANNUITY_FACTOR
+                self.capex_per_kwh * config2.ANNUITY_FACTOR
         )
 
         # Multi-Scenario, 15-min dictionaries for tracking variables (timestep, scenario)

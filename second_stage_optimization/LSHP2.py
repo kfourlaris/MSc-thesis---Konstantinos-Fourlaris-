@@ -1,6 +1,5 @@
 from gurobipy import GRB
-import config_installed
-
+import config2
 
 class LargeScaleHeatPump15Min:
     def __init__(self, name, min_load_fraction=0.15):
@@ -14,14 +13,14 @@ class LargeScaleHeatPump15Min:
         self.delta = min_load_fraction
 
         # Pull technical details from your configuration dictionary
-        tech_data = config_installed.INSTALLED_TECH["LargeScaleHeatPump"]
+        tech_data = config2.INSTALLED_TECH["LargeScaleHeatPump"]
         self.P_cap = tech_data["P_cap"]  # Fixed thermal size (kW_th)
         self.capex_per_kw = tech_data["capex_per_kw"]
         self.opex_per_kw = tech_data["opex_per_kw"]
 
         # Pre-calculate the fixed annualized investment/maintenance cost overhead
         self.fixed_annual_cost = self.P_cap * (
-                self.capex_per_kw * config_installed.ANNUITY_FACTOR + self.opex_per_kw
+                self.capex_per_kw * config2.ANNUITY_FACTOR + self.opex_per_kw
         )
 
         # Multi-Scenario, 15-min dictionaries for tracking variables (timestep, scenario)
@@ -31,6 +30,10 @@ class LargeScaleHeatPump15Min:
         self.V_heat = {}  # Output heat power rate (kW_th)
         self.V_cool = {}  # Output cooling power rate (kW_cool)
         self.U_elec = {}  # Baseline input electricity power rate (kW_el)
+
+        # Separate Up and Down capacity tracking variables (kW)
+        self.V_balancing_up = {} #LSHP consumes less
+        self.V_balancing_down = {} #LSHP consumes more
 
     def add_variables(self, model, timesteps_15min, scenario):
         """
@@ -65,6 +68,19 @@ class LargeScaleHeatPump15Min:
                 name=f"U_E_{self.name}_t{t}_{scenario}"
             )
 
+            self.V_balancing_up[t, scenario] = model.addVar(
+                lb=0,
+                vtype=GRB.CONTINUOUS,
+                name=f"V_bal_up_{self.name}_t{t}_{scenario}"
+            )
+
+            self.V_balancing_down[t, scenario] = model.addVar(
+                lb=0,
+                vtype=GRB.CONTINUOUS,
+                name=f"V_bal_down_{self.name}_t{t}_{scenario}"
+            )
+
+
     def add_constraints(self, model, timesteps_15min, cop_vector_15min, cop_cool_vector_15min, scenario):
         """
         Enforces 15-minute constraints like in the first stage optimization.
@@ -88,10 +104,19 @@ class LargeScaleHeatPump15Min:
                 name=f"elec_balance_{self.name}_t{t}_{scenario}"
             )
 
-            # 3. Balancing Market Physical Capacity Cap
-            # Total electrical footprint (baseline electricity + balancing market commitments)
-            # cannot exceed the equivalent electrical maximum input of the machine.
-            # Max thermal output is self.P_cap, so max baseline electrical input is (self.P_cap / COP).
+            # 3.1. UPWARD LIMIT: You cannot bid to turn off more than you are currently running!
+            model.addConstr(
+                self.V_balancing_up[t, scenario] <= self.U_elec[t, scenario],
+                name=f"bal_up_physical_limit_{self.name}_t{t}_{scenario}"
+            )
+
+            # 3.2. DOWNWARD LIMIT: Your current run-rate + your downward bid cannot overshoot the machine's absolute maximum electrical size
+            max_elec_input = self.P_cap / cop_vector_15min[t]
+
+            model.addConstr(
+                self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] <= max_elec_input * self.y_on[t, scenario],
+                name=f"bal_down_physical_limit_{self.name}_t{t}_{scenario}"
+            )
 
             # 4. Heating Operational Bounds
             model.addConstr(

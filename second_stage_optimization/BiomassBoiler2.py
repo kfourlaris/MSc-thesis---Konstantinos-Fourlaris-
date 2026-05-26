@@ -1,5 +1,5 @@
 from gurobipy import GRB
-import config_part2
+import config2
 
 
 class BiomassBoiler15Min:
@@ -9,13 +9,13 @@ class BiomassBoiler15Min:
         self.delta = min_load_fraction
 
         # Pull the data structures from the new config file
-        tech_data = config_installed.INSTALLED_TECH["BiomassBoiler"]
+        tech_data = config2.INSTALLED_TECH["BiomassBoiler"]
         self.P_cap = tech_data["P_cap"]
         self.capex_per_kw = tech_data["capex_per_kw"]
         self.opex_per_kw = tech_data["opex_per_kw"]
 
         # Pre-calculate the absolute annualized investment/maintenance cost for this unit
-        self.fixed_annual_cost = self.P_cap * (self.capex_per_kw * config_installed.ANNUITY_FACTOR + self.opex_per_kw)
+        self.fixed_annual_cost = self.P_cap * (self.capex_per_kw * config2.ANNUITY_FACTOR + self.opex_per_kw)
 
         # Operational decision variables
         self.y_on = {}

@@ -2,7 +2,7 @@ from gurobipy import GRB
 
 class LargeScaleHeatPump:
     def __init__(self, name, p_min_market=500, p_max_market=500000,
-                 min_load_fraction=0.15, capex_per_kw_th=1200, opex_per_kw_th=24):
+                 min_load_fraction=0.15, capex_per_kw_th=1700, opex_per_kw_th=24):
         """
         Args:
             p_min_market: Smallest available capacity (kW_th)
