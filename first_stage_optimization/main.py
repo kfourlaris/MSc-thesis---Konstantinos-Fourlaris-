@@ -40,7 +40,7 @@ ELEC_PRICE_VEC = (df_prices[selected_elec_col] / 1000).tolist()
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
 timesteps = range(8760)  # Hourly resolution for one year
-model.setParam('MIPGap', 0.02) #for making it run faster
+model.setParam('MIPGap', 0.008) #for making it run faster
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 all_techs = {

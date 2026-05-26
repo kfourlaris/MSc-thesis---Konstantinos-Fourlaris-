@@ -3,7 +3,7 @@ from gurobipy import GRB
 class CHP:
     def __init__(self, name, efficiency_el=0.35, efficiency_th=0.65,
                  p_min_market=50, p_max_market=1000000,
-                 min_load_fraction=0.15, capex_per_kw_el=3000, opex_per_kw_el=60):
+                 min_load_fraction=0.15, capex_per_kw_el=0, opex_per_kw_el=60):
         """
         Args:
             efficiency_el: Electrical efficiency (eta_el) (https://www.futuremarketinsights.com/reports/combined-heat-and-power-chp-systems-market)
@@ -18,8 +18,8 @@ class CHP:
         self.p_min = p_min_market
         self.p_max = p_max_market
         self.delta = min_load_fraction
-        self.capex_per_kw = capex_per_kw_el
-        self.opex_per_kw = opex_per_kw_el
+        self.capex_per_kw = capex_per_kw_el #3000 EUR/KW
+        self.opex_per_kw = opex_per_kw_el   #60 EUR/KW
 
         # Placeholders for Variables (Matching what is defined in my proposal)
         self.P_cap = None      # Design size in kW_el (P_k)

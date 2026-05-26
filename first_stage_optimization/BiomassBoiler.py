@@ -4,7 +4,7 @@ from gurobipy import GRB
 class BiomassBoiler:
     def __init__(self, name, efficiency=0.86,
                  p_min_market=50, p_max_market=50000,
-                 min_load_fraction=0.10, capex_per_kw=350, opex_per_kw=7):
+                 min_load_fraction=0.10, capex_per_kw=0, opex_per_kw=7):
         """
         Args:
             p_min_market: Smallest available boiler size (e.g., 50 kW)
@@ -19,8 +19,8 @@ class BiomassBoiler:
         self.p_min = p_min_market
         self.p_max = p_max_market
         self.delta = min_load_fraction
-        self.capex_per_kw = capex_per_kw
-        self.opex_per_kw = opex_per_kw
+        self.capex_per_kw = capex_per_kw #350 EUR/KW
+        self.opex_per_kw = opex_per_kw   #7 EUR/KW
 
         # Placeholders for Variables
         self.P_cap = None  # Design size (P_k)

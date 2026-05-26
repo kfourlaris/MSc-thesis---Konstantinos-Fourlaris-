@@ -3,7 +3,7 @@ from gurobipy import GRB
 
 class PitThermalEnergyStorage:
     def __init__(self, name, e_min_market=50, e_max_market=2788800,
-                 capex_per_kwh=12, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
+                 capex_per_kwh=3, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
         """
         Args:
             e_min_market: Minimum installable energy capacity (KWh)
@@ -53,7 +53,8 @@ class PitThermalEnergyStorage:
 
             #charge and discharge constraints
             #The charging energy at time t cannot exceed the size of the LSHP
-            model.addConstr(self.U_charge[t] <= hp_instance.V_heat[t] * self.C_tech[t], name=f"charging_constraint{self.name}_{t}")
+            model.addConstr(self.U_charge[t] <= hp_instance.V_heat[t], name=f"charging_constraint_one{self.name}_{t}")
+            model.addConstr(self.U_charge[t] <= hp_instance.p_max * self.C_tech[t], name=f"charging_constraint_two{self.name}_{t}" )
             #The discharging energy at time t cannot exceed the heat peak demand power of the network
             model.addConstr(self.V_disch[t] <= peak_demand_kw * (1-self.C_tech[t]), name=f"discharging_constraint{self.name}_{t}")
 
