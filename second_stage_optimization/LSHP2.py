@@ -99,7 +99,7 @@ class LargeScaleHeatPump15Min:
 
             # 2. Performance Constraint (The Electricity Bridge)
             model.addConstr(
-                self.U_elec[t, scenario] == (self.V_heat[t, scenario] / cop_vector_15min[t]) +
+                self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] - self.V_balancing_up[t, scenario] == (self.V_heat[t, scenario] / cop_vector_15min[t]) +
                 (self.V_cool[t, scenario] / cop_cool_vector_15min[t]),
                 name=f"elec_balance_{self.name}_t{t}_{scenario}"
             )
@@ -132,4 +132,9 @@ class LargeScaleHeatPump15Min:
             model.addConstr(
                 self.V_cool[t, scenario] <= self.P_cap * self.y_cool[t, scenario],
                 name=f"up_bound_fixed_P_cool_{self.name}_t{t}_{scenario}"
+            )
+
+            model.addConstr(
+                self.V_heat[t, scenario] <= 100000 * self.y_cool[t, scenario] + self.P_cap * (1 - self.y_cool[t, scenario]),
+                name=f"simultaneous_function_{self.name}_t{t}_{scenario}"
             )

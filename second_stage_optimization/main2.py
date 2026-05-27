@@ -2,6 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Import the new 15-minute operational modules and high-res config
 import config2
@@ -18,7 +19,7 @@ print(f"Total 15-Minute Timesteps: {len(config2.HEAT_DEMAND_15MIN)} intervals")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization")
-model.setParam('MIPGap', 0.05)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.008)  # Maintain identical performance gap target
 
 timesteps_15min = range(35040)  # High-resolution time horizon (8760 * 4)
 
@@ -137,5 +138,92 @@ if model.Status == GRB.OPTIMAL:
     print(f" -> Fixed Capital & Maintenance Overhead:  {total_fixed_annual_investment:,.2f} Euro")
     print(f" -> Expected Multi-Scenario Net Opex:     {model.ObjVal - total_fixed_annual_investment:,.2f} Euro")
     print("=" * 50)
+
+    # =========================================================================
+    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---
+    # =========================================================================
+    target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
+
+    # Define your exact 1-week validation window
+    start_t = 1344
+    end_t = 2016
+    week_timesteps = range(start_t, end_t)
+
+    print(f"\nExtracting and rendering LSHP operational curves for Scenario: {target_scenario}...")
+    print(f"Zooming into week profile: Timesteps {start_t} to {end_t}")
+
+    u_elec_values = [lshp.U_elec[t, target_scenario].X for t in week_timesteps]
+    bal_up_values = [lshp.V_balancing_up[t, target_scenario].X for t in week_timesteps]
+    bal_down_values = [lshp.V_balancing_down[t, target_scenario].X for t in week_timesteps]
+
+    net_elec_import = [
+        u_elec_values[i] + bal_down_values[i] - bal_up_values[i] for i in range(len(week_timesteps))
+    ]
+
+    df_plot = pd.DataFrame({
+        'Timestep': list(week_timesteps),
+        'Baseline_Import': u_elec_values,
+        'Balancing_Up': bal_up_values,
+        'Balancing_Down': bal_down_values,
+        'Net_Electrical_Import': net_elec_import
+    })
+
+    # =========================================================================
+    # --- PRINT QUANTITATIVE VALUES FOR EVERY QUARTER OF THE EXAMINED WEEK ---
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print(f"      QUARTERLY OPERATIONAL DISPATCH DATA FOR LSHP (TIMESTEPS {start_t} TO {end_t})")
+    print("=" * 95)
+    # Print Table Header
+    print(
+        f"{'Timestep':<10} | {'Day of Year':<12} | {'Hour':<8} | {'Baseline (kW)':<15} | {'Bal_Up (kW)':<12} | {'Bal_Down (kW)':<13} | {'Net_Import (kW)':<15}")
+    print("-" * 95)
+
+    for idx, row in df_plot.iterrows():
+        t_val = int(row['Timestep'])
+
+        # Calculate real time layout assuming timestep 0 is Jan 1st 00:00
+        # 4 intervals per hour means t / 4 = total hours passed
+        total_hours_passed = t_val / 4
+        day_of_year = int(total_hours_passed // 24) + 1
+        hour_of_day = int(total_hours_passed % 24)
+        minute_of_hour = int((t_val % 4) * 15)
+        time_str = f"{hour_of_day:02d}:{minute_of_hour:02d}"
+
+        # Print every quarterly interval entry with clean decimal formatting
+        print(
+            f"{t_val:<10} | Day {day_of_year:<8} | {time_str:<8} | {row['Baseline_Import']:<15,.2f} | {row['Balancing_Up']:<12,.2f} | {row['Balancing_Down']:<13,.2f} | {row['Net_Electrical_Import']:<15,.2f}")
+
+    print("=" * 95 + "\n")
+
+    plt.figure(figsize=(15, 6))
+
+    # Plot tracking signals
+    plt.plot(df_plot['Timestep'], df_plot['Baseline_Import'], label='Baseline Import ($U_{elec}$)',
+             color='gray', linestyle='--', alpha=0.7, linewidth=1.5)
+    plt.plot(df_plot['Timestep'], df_plot['Balancing_Down'], label='Balancing Down ($V_{bal,down}$ - Consuming More)',
+             color='darkred', alpha=0.8, linewidth=1.5)
+    plt.plot(df_plot['Timestep'], df_plot['Balancing_Up'], label='Balancing Up ($V_{bal,up}$ - Consuming Less)',
+             color='darkgreen', alpha=0.8, linewidth=1.5)
+
+    # FIX: Changed 'style' to 'linestyle'
+    plt.plot(df_plot['Timestep'], df_plot['Net_Electrical_Import'], label='Net Physical Grid Import',
+             color='blue', linewidth=2.0, linestyle='-')
+
+    # Chart decorations
+    plt.title(
+        f'Zurich LSHP Electrical Dispatch Validation | Scenario {target_scenario} (Timesteps {start_t} - {end_t})',
+        fontsize=13, fontweight='bold')
+    plt.xlabel('15-Minute Operational Intervals', fontsize=11)
+    plt.ylabel('Electrical Power Demand (kW)', fontsize=11)
+
+    plt.xlim(start_t, end_t)
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
+
+    plt.tight_layout()
+    print("Rendering zoomed graph layout. Close the window manually to finish script execution.")
+    plt.show(block=True)
 else:
     print("Optimization terminated with status code:", model.Status)
+

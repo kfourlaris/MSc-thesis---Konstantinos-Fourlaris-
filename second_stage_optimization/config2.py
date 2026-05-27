@@ -6,24 +6,24 @@ import pandas as pd
 # =============================================================================
 INSTALLED_TECH = {
     "BiomassBoiler": {
-        "P_cap": 0,       # Paste your Stage 1 optimal kW output here
-        "capex_per_kw": 350,    # Euro/kW
+        "P_cap": 50000,       # Paste your Stage 1 optimal kW output here
+        "capex_per_kw": 0,    # Euro/kW
         "opex_per_kw": 7        # Euro/kW/year
     },
     "CHP": {
-        "P_cap": 0,       # Paste your Stage 1 optimal kW_el output here
-        "capex_per_kw": 3000,   # Euro/kW_el
+        "P_cap": 255000,       # Paste your Stage 1 optimal kW_el output here
+        "capex_per_kw": 0,   # Euro/kW_el
         "opex_per_kw": 60       # Euro/kW_el/year
     },
     "LargeScaleHeatPump": {
-        "P_cap": 805000.00,       # Paste your Stage 1 optimal kW_th output here
-        "capex_per_kw": 1200,   # Euro/kW_th
-        "opex_per_kw": 24       # Euro/kW_th/year
+        "P_cap": 400000.00,       # Paste your Stage 1 optimal kW_th output here
+        "capex_per_kw": 1700,   # Euro/kW_th
+        "opex_per_kw": 34       # Euro/kW_th/year
     },
     "TES": {
-        "E_cap": 2006884.00,       # Paste your Stage 1 optimal kWh output here
-        "capex_per_kwh": 12,    # Euro/kWh
-        "opex_per_kwh": 0.5     # Euro/kWh/year
+        "E_cap": 1564520.00,       # Paste your Stage 1 optimal kWh output here
+        "capex_per_kwh": 3,    # Euro/kWh
+        "opex_per_kwh": 0     # Euro/kWh/year
     }
 }
 
@@ -32,7 +32,9 @@ INSTALLED_TECH = {
 # =============================================================================
 INTEREST_RATE = 0.12
 LIFESPAN = 20
-T_SINK = 65.0
+T_SINK = 70.0
+T_RETURN = 30
+T_COOLING = 6
 
 def _calculate_annuity_factor(i, n):
     if i == 0: return 1 / n
@@ -103,12 +105,12 @@ def _calculate_heating_cop(T_s_vec, T_k):
 def _calculate_cooling_cop(T_s_vec, T_k):
     dT = T_k - np.array(T_s_vec)
     # The Regression Formula from R717 refrigerant performance data - 1
-    cop = (0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684) - 1
+    cop = 0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684 - 1
     return np.maximum(cop, 0.1).tolist()
 
 # Compute the high-resolution 15-minute COP vectors natively from the 15-min temperature array
 COP_VEC_15MIN = _calculate_heating_cop(T_source_15min, T_SINK)
-COP_COOL_VEC_15MIN = _calculate_cooling_cop(T_source_15min, T_SINK)
+COP_COOL_VEC_15MIN = _calculate_cooling_cop(T_COOLING, T_source_15min)
 
 # --- LOAD AND STRETCH BASE ELECTRICITY PRICES ---
 df_prices = pd.read_excel(PRICE_DATA_PATH)

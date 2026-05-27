@@ -71,6 +71,11 @@ class PitThermalEnergyStorage15Min:
                 self.U_charge[t, scenario] <= hp_max_thermal_capacity * self.C_tech[t, scenario],
                 name=f"charge_limit_{self.name}_t{t}_{scenario}"
             )
+            model.addConstr(
+                self.U_charge[t, scenario] <= hp_15min_instance.V_heat[t, scenario],
+                name=f"charge_limit_{self.name}_t{t}_{scenario}"
+            )
+
             # Discharging power rate bounded by the historical network peak load parameter
             model.addConstr(
                 self.V_disch[t, scenario] <= peak_demand_kw * (1 - self.C_tech[t, scenario]),
