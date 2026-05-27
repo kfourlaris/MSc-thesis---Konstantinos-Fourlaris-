@@ -6,7 +6,7 @@ INTEREST_RATE = 0.12
 LIFESPAN = 20
 T_SINK = 70.0  # DH Supply Temperature
 T_RETURN = 30  # DH Return Temperature
-T_COOLING = 5  # DC Supply Temperature
+T_COOLING = 6  # DC Supply Temperature Reporting instructions for completing the sistrict heating and cooling template Directive 2017/27/EU
 
 # --- ENERGY DEMAND ---
 # CHANGE THIS TO "Amsterdam" OR "Zurich" TO SWITCH THE ENTIRE MODEL
