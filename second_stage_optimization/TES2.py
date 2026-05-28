@@ -61,22 +61,22 @@ class PitThermalEnergyStorage15Min:
         """
         Enforces 15-minute storage constraints and inventory energy balances.
         """
-        # Read the fixed capacity of the heat pump to use as a maximum charge limit parameters
         hp_max_thermal_capacity = hp_15min_instance.P_cap
 
         for t in timesteps_15min:
-            # 1. Simultaneous Charging/Discharging Protection (Linearized Big-M bounds)
-            # Charging power rate bounded by the max capacity of the source heat pump
+            # 1. Charging Limits: Storage can charge from balancing down heat
+            # OR any excess day-ahead heat pump production capacity
+            model.addConstr(
+                self.U_charge[t, scenario] <= hp_15min_instance.V_heat_bal_down[t, scenario] +
+                hp_15min_instance.V_heat_DA[t, scenario],
+                name=f"charge_source_gate_{self.name}_t{t}_{scenario}"
+            )
+
+            # Simultaneous operation binary lockout protection
             model.addConstr(
                 self.U_charge[t, scenario] <= hp_max_thermal_capacity * self.C_tech[t, scenario],
                 name=f"charge_limit_{self.name}_t{t}_{scenario}"
             )
-            model.addConstr(
-                self.U_charge[t, scenario] <= hp_15min_instance.V_heat[t, scenario],
-                name=f"charge_limit_{self.name}_t{t}_{scenario}"
-            )
-
-            # Discharging power rate bounded by the historical network peak load parameter
             model.addConstr(
                 self.V_disch[t, scenario] <= peak_demand_kw * (1 - self.C_tech[t, scenario]),
                 name=f"disch_limit_{self.name}_t{t}_{scenario}"
@@ -84,13 +84,11 @@ class PitThermalEnergyStorage15Min:
 
             # 2. Sequential Inventory Continuity Equations
             if t == 0:
-                # Inter-periodicity: First 15-min step is anchored to the final step of the profile year
                 model.addConstr(
                     self.E_state[t, scenario] == self.E_state[timesteps_15min[-1], scenario],
                     name=f"periodicity_{self.name}_{scenario}"
                 )
             else:
-                # Energy Balance factoring in 15-minute operational steps (Power kW * 0.25h = Energy kWh)
                 model.addConstr(
                     self.E_state[t, scenario] == (1 - self.lam_15min) * self.E_state[t - 1, scenario] +
                     (self.eta_c * self.U_charge[t, scenario] * 0.25) -

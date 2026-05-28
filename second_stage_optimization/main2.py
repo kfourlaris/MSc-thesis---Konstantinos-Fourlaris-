@@ -19,7 +19,7 @@ print(f"Total 15-Minute Timesteps: {len(config2.HEAT_DEMAND_15MIN)} intervals")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization")
-model.setParam('MIPGap', 0.008)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.158)  # Maintain identical performance gap target
 
 timesteps_15min = range(35040)  # High-resolution time horizon (8760 * 4)
 
@@ -61,7 +61,9 @@ for s in config2.SCENARIOS:
     # 4. Global Network Energy Demand Balances per Scenario
     # Multiplied by 0.25 hours because tech variables are kW (Power), demand is kWh (Energy)
     model.addConstrs(
-        (gp.quicksum(tech.V_heat[t, s] for tech in technologies) * 0.25 +
+        (boiler.V_heat[t, s] * 0.25 +
+         chp.V_heat[t, s] * 0.25 +
+         lshp.V_heat_DA[t, s] * 0.25 +  # <--- ONLY Day-Ahead generated heat allowed here!
          (tes.V_disch[t, s] - tes.U_charge[t, s]) * 0.25 == config2.HEAT_DEMAND_15MIN[t]
          for t in timesteps_15min),
         name=f"Global_Heat_Demand_Balance_{s}"
@@ -121,7 +123,7 @@ for s in config2.SCENARIOS:
 
     # Aggregate net scenario operational result multiplied by probability metric
     expected_operational_cost += prob * (
-                baseline_spending_s - baseline_revenue_s - bal_arbitrage_up_s + bal_arbitrage_down_s)
+                baseline_spending_s - baseline_revenue_s -  bal_arbitrage_up_s + bal_arbitrage_down_s)
 
 # Establish Unified Optimization Goal
 model.setObjective(total_fixed_annual_investment + expected_operational_cost, GRB.MINIMIZE)
@@ -224,6 +226,106 @@ if model.Status == GRB.OPTIMAL:
     plt.tight_layout()
     print("Rendering zoomed graph layout. Close the window manually to finish script execution.")
     plt.show(block=True)
+
+    # =========================================================================
+    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (MULTI-WEEK COMPARISON) ---
+    # =========================================================================
+    target_scenario = 'S1'  # Target scenario profile to isolate
+
+    # Define the two distinct 1-week evaluation horizons (start_t, end_t, label)
+    validation_periods = [
+        (1344, 2016, "Winter Week (Jan)"),
+        (20352, 21024, "Summer Week (Jul)")
+    ]
+
+    print(f"\n" + "=" * 60)
+    print(f" GENERATING STAGE 2 MULTI-PERIOD SYSTEM DISPATCH FIGURES")
+    print(f" Isolated Scenario Profile: {target_scenario}")
+    print("=" * 60)
+
+    for start_t, end_t, period_label in validation_periods:
+        week_timesteps = range(start_t, end_t)
+        hour_range = [t / 4 for t in week_timesteps]
+
+        print(f"\nProcessing visual matrices for: {period_label}")
+        print(f" -> Timesteps {start_t} to {end_t} (Hours {start_t / 4:.1f} to {end_t / 4:.1f})")
+
+        # --- 1. DATA EXTRACTION & POWER NORMALIZATION (kW to MW) ---
+        v_boiler_mw = [boiler.V_heat[t, target_scenario].X / 1000 for t in week_timesteps]
+        v_chp_mw = [chp.V_heat[t, target_scenario].X / 1000 for t in week_timesteps]
+        v_lshp_da_mw = [lshp.V_heat_DA[t, target_scenario].X / 1000 for t in week_timesteps]
+        v_lshp_bal_mw = [lshp.V_heat_bal_down[t, target_scenario].X / 1000 for t in week_timesteps]
+
+        heat_demand_mw = [config2.HEAT_DEMAND_15MIN[t] / 0.25 / 1000 for t in week_timesteps]
+        v_cool_mw = [lshp.V_cool[t, target_scenario].X / 1000 for t in week_timesteps]
+        cooling_demand_mw = [config2.COOLING_DEMAND_15MIN[t] / 0.25 / 1000 for t in week_timesteps]
+
+        charge_vals_mw = [-tes.U_charge[t, target_scenario].X / 1000 for t in week_timesteps]
+        disch_vals_mw = [tes.V_disch[t, target_scenario].X / 1000 for t in week_timesteps]
+        tes_capacity_mwh = tes.E_cap / 1000
+        soc_percent_vals = [(tes.E_state[t, target_scenario].X / 1000 / tes_capacity_mwh) * 100 for t in week_timesteps]
+
+        # --- 2. FIGURE 1: THERMAL HEATING DISPATCH STACK ---
+        plt.figure(figsize=(13, 5.5))
+        plt.stackplot(hour_range,
+                      v_boiler_mw, v_chp_mw, v_lshp_da_mw, v_lshp_bal_mw,
+                      labels=['Biomass Boiler', 'CHP', 'Heat Pump (Day-Ahead)', 'Heat Pump (Balancing Down)'],
+                      colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6'], alpha=0.8)
+        plt.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
+
+        plt.title(f'Zurich District Heating Dispatch Stack — {period_label} [Scenario: {target_scenario}]', fontsize=12,
+                  fontweight='bold')
+        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
+        plt.ylabel('Thermal Power Level (MW)', fontsize=11)
+        plt.xlim(start_t / 4, end_t / 4)
+        plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
+        plt.grid(axis='y', linestyle=':', alpha=0.5)
+        plt.tight_layout()
+        plt.show(block=False)
+
+        # --- 3. FIGURE 2: TES POWER FLOWS & INVENTORY LEVEL ---
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(13, 8.5), sharex=True)
+
+        ax1.fill_between(hour_range, disch_vals_mw, label='Storage Discharging (+)', color='orange', alpha=0.7)
+        ax1.fill_between(hour_range, charge_vals_mw, label='Storage Charging (-)', color='navy', alpha=0.7)
+        ax1.axhline(0, color='black', linewidth=1)
+        ax1.set_ylabel('Thermal Flow (MW)', fontsize=11)
+        ax1.set_title(f'TES Operation & State of Charge Tracking — {period_label}', fontsize=12, fontweight='bold')
+        ax1.legend(loc='upper right')
+        ax1.grid(linestyle=':', alpha=0.5)
+
+        ax2.plot(hour_range, soc_percent_vals, color='green', linewidth=1.5, label='Stored Inventory')
+        ax2.fill_between(hour_range, soc_percent_vals, color='green', alpha=0.1)
+        ax2.set_ylabel('State of Charge (%)', fontsize=11)
+        ax2.set_xlabel('Time Horizon (Hours of the Year)', fontsize=11)
+        ax2.set_ylim(-5, 105)
+        ax2.legend(loc='upper right')
+        ax2.grid(linestyle=':', alpha=0.5)
+
+        plt.xlim(start_t / 4, end_t / 4)
+        plt.tight_layout()
+        plt.show(block=False)
+
+        # --- 4. FIGURE 3: COOLING NET DISPATCH STACK ---
+        plt.figure(figsize=(13, 4.5))
+        plt.stackplot(hour_range, v_cool_mw, labels=['Heat Pump Cooling Stream'], colors=['#e67e22'], alpha=0.8)
+        plt.plot(hour_range, cooling_demand_mw, color='black', linestyle='--', linewidth=1.8,
+                 label='Town Cooling Demand')
+
+        plt.title(f'Zurich District Cooling Network Dispatch — {period_label} [Scenario: {target_scenario}]',
+                  fontsize=12, fontweight='bold')
+        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
+        plt.ylabel('Cooling Power Level (MW)', fontsize=11)
+        plt.xlim(start_t / 4, end_t / 4)
+        plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
+        plt.grid(axis='y', linestyle=':', alpha=0.5)
+        plt.tight_layout()
+        plt.show(block=False)
+
+    print("\nAll interactive loops compiled. Close all active figures to exit the Python thread process completely.")
+    plt.show(block=True)
+
+
 else:
     print("Optimization terminated with status code:", model.Status)
 

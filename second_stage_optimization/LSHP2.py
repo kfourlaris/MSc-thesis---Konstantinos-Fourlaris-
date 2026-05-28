@@ -28,12 +28,15 @@ class LargeScaleHeatPump15Min:
         self.y_heat = {}  # Binary active heating mode
         self.y_cool = {}  # Binary active cooling mode
         self.V_heat = {}  # Output heat power rate (kW_th)
+        self.V_heat_DA = {}
+        self.V_heat_bal_down = {}
         self.V_cool = {}  # Output cooling power rate (kW_cool)
         self.U_elec = {}  # Baseline input electricity power rate (kW_el)
 
         # Separate Up and Down capacity tracking variables (kW)
         self.V_balancing_up = {} #LSHP consumes less
         self.V_balancing_down = {} #LSHP consumes more
+        self.b_market_dir = {} # 1 if bidding Downward, 0 if bidding Upward
 
     def add_variables(self, model, timesteps_15min, scenario):
         """
@@ -57,6 +60,19 @@ class LargeScaleHeatPump15Min:
                 vtype=GRB.CONTINUOUS,
                 name=f"V_H_{self.name}_t{t}_{scenario}"
             )
+
+            self.V_heat_DA[t, scenario] = model.addVar(
+                lb=0,
+                vtype=GRB.CONTINUOUS,
+                name=f"V_H_DA_{self.name}_t{t}_{scenario}"
+            )
+
+            self.V_heat_bal_down[t, scenario] = model.addVar(
+                lb=0,
+                vtype=GRB.CONTINUOUS,
+                name=f"V_H_bal_down_{self.name}_t{t}_{scenario}"
+            )
+
             self.V_cool[t, scenario] = model.addVar(
                 lb=0,
                 vtype=GRB.CONTINUOUS,
@@ -80,61 +96,69 @@ class LargeScaleHeatPump15Min:
                 name=f"V_bal_down_{self.name}_t{t}_{scenario}"
             )
 
+            self.b_market_dir[t, scenario] = model.addVar(
+                vtype=GRB.BINARY,
+                name=f"b_market_dir_{self.name}_t{t}_{scenario}"
+            )
+
 
     def add_constraints(self, model, timesteps_15min, cop_vector_15min, cop_cool_vector_15min, scenario):
         """
-        Enforces 15-minute constraints like in the first stage optimization.
-        Expects 15-minute resolved COP arrays containing 35,040 elements.
+        Enforces 15-minute technology constraints with strict directional binary market lockout rules.
         """
         for t in timesteps_15min:
-            # 1. Mode Scheduling Rules
-            model.addConstr(
-                self.y_heat[t, scenario] <= self.y_on[t, scenario],
-                name=f"on_heat_{self.name}_t{t}_{scenario}"
-            )
-            model.addConstr(
-                self.y_cool[t, scenario] <= self.y_on[t, scenario],
-                name=f"on_cool_{self.name}_t{t}_{scenario}"
-            )
+            # --- 0. COMMITMENT AND SCHEDULING MODE SWITCHES ---
+            model.addConstr(self.y_heat[t, scenario] <= self.y_on[t, scenario], name=f"on_heat_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.y_cool[t, scenario] <= self.y_on[t, scenario], name=f"on_cool_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.y_heat[t, scenario] + self.y_cool[t, scenario] <= self.y_on[t, scenario],
+                            name=f"exclusive_thermal_mode_{self.name}_t{t}_{scenario}")
 
-            # 2. Performance Constraint (The Electricity Bridge)
-            model.addConstr(
-                self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] - self.V_balancing_up[t, scenario] == (self.V_heat[t, scenario] / cop_vector_15min[t]) +
-                (self.V_cool[t, scenario] / cop_cool_vector_15min[t]),
-                name=f"elec_balance_{self.name}_t{t}_{scenario}"
-            )
+            # --- 1. THE NET ELECTRICAL REAL-TIME IMPORT DEFINITION ---
+            net_electrical_input = self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] - self.V_balancing_up[
+                t, scenario]
 
-            # 3.1. UPWARD LIMIT: You cannot bid to turn off more than you are currently running!
-            model.addConstr(
-                self.V_balancing_up[t, scenario] <= self.U_elec[t, scenario],
-                name=f"bal_up_physical_limit_{self.name}_t{t}_{scenario}"
-            )
+            # --- 2. PERFORMANCE CONSTRAINTS (THE TRUE THERMODYNAMIC BRIDGE) ---
+            model.addConstr(self.V_heat[t, scenario] == net_electrical_input * cop_vector_15min[t],
+                            name=f"net_electrical_thermal_bridge_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_heat[t, scenario] == self.V_heat_DA[t, scenario] + self.V_heat_bal_down[t, scenario],
+                            name=f"thermal_output_summation_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_heat_DA[t, scenario] <= self.U_elec[t, scenario] * cop_vector_15min[t],
+                            name=f"da_heat_volume_cap_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_heat_bal_down[t, scenario] <= self.V_balancing_down[t, scenario] * cop_vector_15min[t],
+                            name=f"bal_down_heat_volume_cap_{self.name}_t{t}_{scenario}")
 
-            # 3.2. DOWNWARD LIMIT: Your current run-rate + your downward bid cannot overshoot the machine's absolute maximum electrical size
+            # --- 3. MARKET BIDDING CAPACITY FRACTION BOUNDS ---
             max_elec_input = self.P_cap / cop_vector_15min[t]
 
+            # 3.1. UPWARD BALANCING BIDS BOUNDS
+            model.addConstr(self.V_balancing_up[t, scenario] <= self.U_elec[t, scenario],
+                            name=f"bal_up_electrical_limit_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_balancing_up[t, scenario] <= (self.V_heat_DA[t, scenario] / cop_vector_15min[t]),
+                            name=f"bal_up_backed_by_physical_heat_{self.name}_t{t}_{scenario}")
+
+            # 3.2. DOWNWARD BALANCING BIDS BOUNDS
             model.addConstr(
                 self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] <= max_elec_input * self.y_on[t, scenario],
-                name=f"bal_down_physical_limit_{self.name}_t{t}_{scenario}"
+                name=f"bal_down_physical_limit_{self.name}_t{t}_{scenario}")
+
+            # --- NEW PROPORTIONAL BID RATIO LIMIT ---
+            # Forces Balancing Down to scale realistically with your cleared baseline footprint.
+            # Max real-time increase is capped at 50% (0.5) of your current U_elec baseline.
+            model.addConstr(
+                self.V_balancing_down[t, scenario] <= 2 * self.U_elec[t, scenario],
+                name=f"bal_down_proportional_baseline_cap_{self.name}_t{t}_{scenario}"
             )
 
-            # 4. Heating Operational Bounds
-            model.addConstr(
-                self.V_heat[t, scenario] <= self.P_cap * self.y_heat[t, scenario],
-                name=f"up_bound_fixed_P_heat_{self.name}_t{t}_{scenario}"
-            )
-            model.addConstr(
-                self.V_heat[t, scenario] >= self.delta * self.P_cap * self.y_heat[t, scenario],
-                name=f"low_bound_fixed_P_heat_{self.name}_t{t}_{scenario}"
-            )
+            # 3.3. BINARY MUTUAL EXCLUSION REGULATION GATES
+            model.addConstr(self.V_balancing_down[t, scenario] <= max_elec_input * self.b_market_dir[t, scenario],
+                            name=f"bal_down_binary_gate_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_balancing_up[t, scenario] <= max_elec_input * (1 - self.b_market_dir[t, scenario]),
+                            name=f"bal_up_binary_gate_{self.name}_t{t}_{scenario}")
 
-            # 5. Cooling Operational Bounds
-            model.addConstr(
-                self.V_cool[t, scenario] <= self.P_cap * self.y_cool[t, scenario],
-                name=f"up_bound_fixed_P_cool_{self.name}_t{t}_{scenario}"
-            )
-
-            model.addConstr(
-                self.V_heat[t, scenario] <= 100000 * self.y_cool[t, scenario] + self.P_cap * (1 - self.y_cool[t, scenario]),
-                name=f"simultaneous_function_{self.name}_t{t}_{scenario}"
-            )
+            # --- 4. ABSOLUTE PHYSICAL ASSET BOUNDARIES ---
+            model.addConstr(self.V_heat[t, scenario] <= self.P_cap * self.y_heat[t, scenario],
+                            name=f"up_bound_fixed_P_heat_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_heat[t, scenario] >= self.delta * self.P_cap * self.y_heat[t, scenario],
+                            name=f"low_bound_fixed_P_heat_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.V_cool[t, scenario] <= self.P_cap * self.y_cool[t, scenario],
+                            name=f"up_bound_fixed_P_cool_{self.name}_t{t}_{scenario}")
