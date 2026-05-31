@@ -133,13 +133,24 @@ model.optimize()
 
 
 if model.Status == GRB.OPTIMAL:
-    print("\n" + "=" * 50)
-    print("OPTIMIZATION SUCCESSFUL - STAGE 2 UNIFIED RESULTS")
-    print("=" * 50)
-    print(f"Unified Expected Total Annual Cost (TAC):  {model.ObjVal:,.2f} Euro")
-    print(f" -> Fixed Capital & Maintenance Overhead:  {total_fixed_annual_investment:,.2f} Euro")
-    print(f" -> Expected Multi-Scenario Net Opex:     {model.ObjVal - total_fixed_annual_investment:,.2f} Euro")
-    print("=" * 50)
+    # 1. Extract the actual optimized float values from the Gurobi algebraic objects
+    numerical_bal_up = bal_arbitrage_up_s.getValue()
+    numerical_bal_down = bal_arbitrage_down_s.getValue()
+
+    # 2. Pre-calculate your specific financial breakdowns as pure numbers
+    # Baseline cost = Total Cost - CAPEX - (Balancing Up + Balancing Down values)
+    calculated_baseline_cost = model.ObjVal - total_fixed_annual_investment - (numerical_bal_up + numerical_bal_down)
+    net_balancing_opex =  - numerical_bal_up + numerical_bal_down
+
+    print("\n" + "=" * 65)
+    print("        OPTIMIZATION SUCCESSFUL - STAGE 2 BREAKDOWN RESULTS")
+    print("=" * 65)
+    print(f"Unified Expected Total Annual Cost (TAC):      {model.ObjVal:15,.2f} Euro")
+    print("-" * 65)
+    print(f" -> Fixed Capital & Maintenance Overhead:      {total_fixed_annual_investment:15,.2f} Euro")
+    print(f" -> Expected Multi-Scenario Baseline Cost:     {calculated_baseline_cost:15,.2f} Euro")
+    print(f" -> Balancing Participation Net Opex:          {net_balancing_opex:15,.2f} Euro")
+    print("=" * 65)
 
     # =========================================================================
     # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---
