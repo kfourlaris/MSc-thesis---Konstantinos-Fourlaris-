@@ -45,7 +45,29 @@ df_prices = pd.read_excel(PRICE_DATA_PATH)
 elec_prices_kwh = df_prices[CITY_CONFIG[SELECTED_CITY]["elec_price_col"]].values / 1000
 
 # --- MARKET PRICES ---
-FUEL_PRICES = {"biomass": 0.05, "gas": 0.056}  # Euro/kWh
+# Create a full year time range for 2025
+time_index = pd.date_range(start='2025-01-01', periods=8760, freq='h')
+
+BIOMASS_PRICE = 0.05  # Euro/kWh
+gas_prices_monthly = 0.056
+
+# Monthly gas prices in EUR/kWh
+#monthly_gas_prices = {
+    #1: 0.045058 * 1.15, 2: 0.048140 * 1.15, 3: 0.047140 * 1.15,
+    #4: 0.041960 * 1.15, 5: 0.035622 * 1.15, 6: 0.035340 * 1.15,
+    #7: 0.036697 * 1.15, 8: 0.033847 * 1.15, 9: 0.032869 * 1.15,
+    #10: 0.032343 * 1.15, 11: 0.31946 * 1.15, 12: 0.030884 * 1.15,
+#}
+
+#gas_prices_monthly = np.array([
+    #monthly_gas_prices[dt.month]
+    #for dt in time_index
+#])
+
+FUEL_PRICES = {
+    "biomass": BIOMASS_PRICE,
+    "gas": gas_prices_monthly
+}
 ELEC_REVENUE = 0.10  # Selling price for CHP electricity
 DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
@@ -55,9 +77,6 @@ monthly_temps = {
     1: 4, 2: 2, 3: 5, 4: 7, 5: 12, 6: 14,
     7: 17, 8: 18, 9: 15, 10: 11, 11: 7, 12: 4
 }
-
-# Create a full year time range for 2025
-time_index = pd.date_range(start='2025-01-01', periods=8760, freq='h')
 
 # Map the monthly averages to every hour
 T_source_hourly = np.array([monthly_temps[dt.month] for dt in time_index])
