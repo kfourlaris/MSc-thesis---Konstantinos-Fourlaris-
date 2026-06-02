@@ -10,15 +10,15 @@ def calculate_final_energy_demands():
     # ---------------------------------------------------------
     params = {
         'Zurich': {
-            'Annual_Heat_MWh': 1350000,  # Total Heat (SH + DHW)
-            'Annual_Cooling_MWh': 175000,
+            'Annual_Heat_MWh': 434340,  # Total Heat (SH + DHW)
+            'Annual_Cooling_MWh': 14478,  #1/30 the cooling demand,
             'DHW_Share_of_Heat': 0.20,  # 20% of total heat is DHW
             'Network_Share_Res': 0.65,  # 65% Residential share of network
             'Network_Share_Ter': 0.35  # 35% Tertiary share of network
         },
         'Amsterdam': {
-            'Annual_Heat_MWh': 2000000,  # Total Heat (SH + DHW)
-            'Annual_Cooling_MWh': 100000,
+            'Annual_Heat_MWh': 1908000,  # Total Heat (SH + DHW)
+            'Annual_Cooling_MWh': 70000, #1/30 the cooling demand
             'DHW_Share_of_Heat': 0.30,  # 30% of total heat is DHW
             'Network_Share_Res': 0.55,  # 55% Residential share of network
             'Network_Share_Ter': 0.45  # 45% Tertiary share of network

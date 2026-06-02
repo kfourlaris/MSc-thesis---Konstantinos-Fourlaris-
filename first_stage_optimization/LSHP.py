@@ -58,7 +58,7 @@ class LargeScaleHeatPump:
 
             # 2.b THE NEW LOGIC
             model.addConstr(
-                self.V_heat[t] <= 100000 * self.y_cool[t] + self.P_cap * (1 - self.y_cool[t]),
+                self.V_heat[t] <= 40000 * self.y_cool[t] + self.P_cap * (1 - self.y_cool[t]),
                 name=f"simultaneous_limit_{self.name}_{t}"
             )
 

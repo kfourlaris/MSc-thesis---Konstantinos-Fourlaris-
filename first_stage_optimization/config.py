@@ -10,7 +10,7 @@ T_COOLING = 6  # DC Supply Temperature Reporting instructions for completing the
 
 # --- ENERGY DEMAND ---
 # CHANGE THIS TO "Amsterdam" OR "Zurich" TO SWITCH THE ENTIRE MODEL
-SELECTED_CITY = "Zurich"
+SELECTED_CITY = "Amsterdam"
 
 # File paths
 DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
