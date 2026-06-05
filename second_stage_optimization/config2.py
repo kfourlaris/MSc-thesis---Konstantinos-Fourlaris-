@@ -1,29 +1,40 @@
 import numpy as np
 import pandas as pd
+import json
 
 # =============================================================================
-# 1. FIXED SYSTEM FOOTPRINT (HARD COPIED FROM STAGE 1 DETERMINISTIC RUN)
+# 1. Results of first optimization
 # =============================================================================
+
+json_input_path = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/first_stage_optimization/stage1_optimal_capacities.json"
+try:
+    with open(json_input_path, 'r') as f:
+        stage1_caps = json.load(f)
+except FileNotFoundError:
+    print(f"CRITICAL ERROR: {json_input_path} not found. Did you run Stage 1 first?")
+    stage1_caps = {"BiomassBoiler": 0.0, "CHP": 0.0, "LargeScaleHeatPump": 0.0, "TES": 0.0}
+
+# 2. DYNAMICALLY GENERATE THE FIXED FOOTPRINT
 INSTALLED_TECH = {
     "BiomassBoiler": {
-        "P_cap": 50000,       # Paste your Stage 1 optimal kW output here
-        "capex_per_kw": 0,    # Euro/kW
-        "opex_per_kw": 7        # Euro/kW/year
+        "P_cap": stage1_caps.get("BiomassBoiler", 0.0),
+        "capex_per_kw": 0,
+        "opex_per_kw": 7
     },
     "CHP": {
-        "P_cap": 255000,       # Paste your Stage 1 optimal kW_el output here
-        "capex_per_kw": 0,   # Euro/kW_el
-        "opex_per_kw": 60       # Euro/kW_el/year
+        "P_cap": stage1_caps.get("CHP", 0.0),
+        "capex_per_kw": 0,
+        "opex_per_kw": 60
     },
     "LargeScaleHeatPump": {
-        "P_cap": 400000.00,       # Paste your Stage 1 optimal kW_th output here
-        "capex_per_kw": 1700,   # Euro/kW_th
-        "opex_per_kw": 34       # Euro/kW_th/year
+        "P_cap": stage1_caps.get("LargeScaleHeatPump", 0.0),
+        "capex_per_kw": 1700,
+        "opex_per_kw": 34
     },
     "TES": {
-        "E_cap": 1564520.00,       # Paste your Stage 1 optimal kWh output here
-        "capex_per_kwh": 3,    # Euro/kWh
-        "opex_per_kwh": 0     # Euro/kWh/year
+        "E_cap": stage1_caps.get("TES", 0.0),
+        "capex_per_kwh": 8,
+        "opex_per_kwh": 0
     }
 }
 

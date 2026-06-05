@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import gurobipy as gp
 from gurobipy import GRB
+import json
 
 
 x = pd.DataFrame({'NAME':['FOURLARIS']})
@@ -259,3 +260,20 @@ if model.Status == GRB.OPTIMAL:
         create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
         create_cool_dispatch_figure(jan_slice, 'Cool Dispatch: January Zoom')
         create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom')
+
+    # --- NEW: WRITE OPTIMAL CAPACITIES TO JSON FOR STAGE 2 ---
+    stage1_results = {
+        "BiomassBoiler": all_techs['BiomassBoiler'].P_cap.X if config.TECH_SWITCHES.get('BiomassBoiler') else 0.0,
+        "CHP": all_techs['CHP'].P_cap.X if config.TECH_SWITCHES.get('CHP') else 0.0,
+        "LargeScaleHeatPump": all_techs['LargeScaleHeatPump'].P_cap.X if config.TECH_SWITCHES.get(
+            'LargeScaleHeatPump') else 0.0,
+        "TES": tes.E_cap.X if config.TECH_SWITCHES.get('TES') else 0.0
+    }
+
+    # Explicitly save to your input data directory
+    json_output_path = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/first_stage_optimization/stage1_optimal_capacities.json"
+
+    with open(json_output_path, 'w') as f:
+        json.dump(stage1_results, f, indent=4)
+
+    print(f"\nSaved optimal footprints to JSON configuration: {json_output_path}")

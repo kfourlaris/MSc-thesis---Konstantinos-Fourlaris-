@@ -3,6 +3,7 @@ from gurobipy import GRB
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 
 # Import the new 15-minute operational modules and high-res config
 import config2
@@ -19,7 +20,7 @@ print(f"Total 15-Minute Timesteps: {len(config2.HEAT_DEMAND_15MIN)} intervals")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization")
-model.setParam('MIPGap', 0.025)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.15)  # Maintain identical performance gap target
 
 timesteps_15min = range(35040)  # High-resolution time horizon (8760 * 4)
 

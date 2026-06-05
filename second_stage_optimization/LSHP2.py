@@ -108,11 +108,8 @@ class LargeScaleHeatPump15Min:
         """
         for t in timesteps_15min:
             # --- 0. COMMITMENT AND SCHEDULING MODE SWITCHES ---
-            model.addConstr(self.y_heat[t, scenario] <= self.y_on[t, scenario], name=f"on_heat_{self.name}_t{t}_{scenario}")
-            model.addConstr(self.y_cool[t, scenario] <= self.y_on[t, scenario], name=f"on_cool_{self.name}_t{t}_{scenario}")
-            model.addConstr(self.V_heat[t, scenario] <= 100000 * self.y_cool[t, scenario] + self.P_cap * (1 - self.y_cool[t, scenario]), name=f"simul_function_{self.name}_t{t}_{scenario}")
-            #model.addConstr(self.y_heat[t, scenario] + self.y_cool[t, scenario] <= self.y_on[t, scenario],
-                            #name=f"exclusive_thermal_mode_{self.name}_t{t}_{scenario}")
+            model.addConstr(self.y_heat[t, scenario] + self.y_cool[t, scenario] <= self.y_on[t, scenario],
+                            name=f"exclusive_thermal_mode_{self.name}_t{t}_{scenario}")
 
             # --- 1. THE NET ELECTRICAL REAL-TIME IMPORT DEFINITION ---
             net_electrical_input = self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] - self.V_balancing_up[
