@@ -45,9 +45,9 @@ model.setParam('MIPGap', 0.01) #for making it run faster
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 all_techs = {
-    "BiomassBoiler": BiomassBoiler("BB_Zurich"),
-    "CHP": CHP("CHP_Zurich"),
-    "LargeScaleHeatPump": LargeScaleHeatPump("HP_Zurich")
+    "BiomassBoiler": BiomassBoiler("BB"),
+    "CHP": CHP("CHP"),
+    "LargeScaleHeatPump": LargeScaleHeatPump("HP")
 }
 
 technologies = [obj for name, obj in all_techs.items() if config.TECH_SWITCHES.get(name, True)]
@@ -58,7 +58,7 @@ for tech in technologies:
 
 tes_enabled = config.TECH_SWITCHES.get("TES", True)
 if tes_enabled:
-    tes = PitThermalEnergyStorage("TES_Zurich")
+    tes = PitThermalEnergyStorage("TES")
     tes.add_variables(model, timesteps) # Variables for TES added here
 
 # 2. ADD CONSTRAINTS LATER

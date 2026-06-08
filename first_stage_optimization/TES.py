@@ -8,7 +8,7 @@ class PitThermalEnergyStorage:
         Args:
             e_min_market: Minimum installable energy capacity (KWh)
             e_max_market: Maximum installable energy capacity (KWh) 60000m3
-            capex_per_kwh: Investment cost per unit of energy capacity
+            capex_per_kwh: Investment cost per unit of energy capacity (https://doi.org/10.1016/j.solener.2022.12.046)
             loss_rate: Hourly self-discharge rate (lambda)
             eta_charge: Charging efficiency (eta^c)
             eta_disch: Discharging efficiency (eta^d)
