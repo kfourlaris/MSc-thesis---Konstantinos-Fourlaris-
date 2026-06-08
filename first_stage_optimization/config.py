@@ -93,15 +93,24 @@ def _calculate_heating_cop(T_s_vec, T_k):
     return np.maximum(cop, 1.0).tolist()
 
 def _calculate_cooling_cop(T_s_vec, T_k):
-    dT = T_k - np.array(T_s_vec)
-    # The Regression Formula from (https://doi.org/10.1016/j.rser.2020.110646) for R717 refrigerant - 1) and reversible machines basic thermodynamics
-    cop = 0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684 - 1
-    return np.maximum(cop, 0.1).tolist()
+    """
+        Calculates a dynamic cooling COP vector for an electric motor-driven chiller.
 
+        The base coefficient (4.70) and temperature sensitivity factor (0.0045)
+        are calibrated so that the machine operates around a standard COP of 4.5
+        under realistic summer lake temperature lifts.
+        """
+
+    # Source: (ASHRAE Standard 90.1-2019 / 2022 (Table 6.8.1-3: Water-Chilling Packages - Minimum Efficiency Requirements)
+
+    cop_cool = 4.70 * (1.0 - 0.0045 * (np.array(T_s_vec) - T_k))
+
+    # Enforce a physical lower safety bound just in case
+    return np.maximum(cop_cool, 0.1).tolist()
 
 # --- EXPORTED VARIABLES ---
 ANNUITY_FACTOR = _calculate_annuity_factor(INTEREST_RATE, LIFESPAN)
 COP_VEC = _calculate_heating_cop(T_source_hourly, T_SINK)
-COP_COOL_VEC = _calculate_cooling_cop(T_COOLING, T_source_hourly)
+COP_COOL_VEC = _calculate_cooling_cop(T_source_hourly, T_COOLING)
 
 

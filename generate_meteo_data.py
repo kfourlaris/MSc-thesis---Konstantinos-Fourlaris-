@@ -2,6 +2,7 @@ import meteostat
 import pandas as pd
 print(meteostat.__file__)
 print(dir(meteostat))
+import pandas as pd
 
 from meteostat import Point, stations, hourly, config
 from datetime import datetime
@@ -58,4 +59,22 @@ print(data.head())
 data.to_csv("/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Amsterdam_meteo_raw_data.csv", index=True, encoding="utf-8")
 print("Data saved to Amsterdam.csv")
 
+# =====================================================================
+# Hours above 25.5 oC to calculate share of cooling demand
+# =====================================================================
+
+# 1. Read the saved CSV files back into memory
+df_zurich = pd.read_csv("/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Zurich_meteo_raw_data.csv")
+df_amsterdam = pd.read_csv("/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Amsterdam_meteo_raw_data.csv")
+
+# 2. Count how many hours are strictly above 30 degrees for each city
+zurich_hot_hours = len(df_zurich[df_zurich['temp'] >= 25.5])
+amsterdam_hot_hours = len(df_amsterdam[df_amsterdam['temp'] >= 25.5])
+
+print("\n" + "="*50)
+print("ANNUAL HOURS ABOVE 25.5°C PER CITY (2025)")
+print("="*50)
+print(f"Zurich:    {zurich_hot_hours} hours")
+print(f"Amsterdam: {amsterdam_hot_hours} hours")
+print("="*50)
 

@@ -19,6 +19,7 @@ from first_stage_optimization.TES import PitThermalEnergyStorage
 # Verify the data is flowing
 print(f"Using CRF: {config.ANNUITY_FACTOR:.4f}")
 print(f"Average COP: {sum(config.COP_VEC) / 8760:.2f}")
+print(f"Average ccoling COP: {sum(config.COP_COOL_VEC) / 8760:.2f}")
 
 # --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
 # Load the final MWh file
@@ -36,7 +37,7 @@ selected_elec_col = config.CITY_CONFIG[config.SELECTED_CITY]["elec_price_col"]
 HEAT_DEMAND_VEC = (df_demand[selected_col_heat] * 1000).tolist()
 COOLING_DEMAND_VEC = (df_demand[selected_col_cool] * 1000).tolist()
 peak_demand_kw = max(HEAT_DEMAND_VEC)
-ELEC_PRICE_VEC = (df_prices[selected_elec_col] / 1000).tolist()
+ELEC_PRICE_VEC = config.DYNAMIC_ELEC_PRICES.tolist()
 
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
