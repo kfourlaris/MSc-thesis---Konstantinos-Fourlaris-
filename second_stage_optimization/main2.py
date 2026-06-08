@@ -17,18 +17,21 @@ print(f"--- Running Stage 2 Balancing Market Optimization for: {config2.SELECTED
 print(f"Locked Annuity Factor (CRF): {config2.ANNUITY_FACTOR:.4f}")
 print(f"Number of Scenarios Loaded: {len(config2.SCENARIOS)} ({config2.SCENARIOS})")
 print(f"Total 15-Minute Timesteps: {len(config2.HEAT_DEMAND_15MIN)} intervals")
+print(f"Using CRF: {config2.ANNUITY_FACTOR:.4f}")
+print(f"Average COP: {sum(config2.COP_VEC_15MIN) / 35040:.2f}")
+print(f"Average ccoling COP: {sum(config2.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization")
-model.setParam('MIPGap', 0.15)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.07)  # Maintain identical performance gap target
 
 timesteps_15min = range(35040)  # High-resolution time horizon (8760 * 4)
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES (Switches removed, all fully active) ---
-boiler = BiomassBoiler15Min("BB_Zurich")
-chp = CHP15Min("CHP_Zurich")
-lshp = LargeScaleHeatPump15Min("HP_Zurich")
-tes = PitThermalEnergyStorage15Min("TES_Zurich")
+boiler = BiomassBoiler15Min("BB")
+chp = CHP15Min("CHP")
+lshp = LargeScaleHeatPump15Min("HP")
+tes = PitThermalEnergyStorage15Min("TES")
 
 technologies = [boiler, chp, lshp]
 

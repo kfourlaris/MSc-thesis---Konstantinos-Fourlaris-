@@ -116,7 +116,7 @@ class LargeScaleHeatPump15Min:
                 t, scenario]
 
             # --- 2. PERFORMANCE CONSTRAINTS (THE TRUE THERMODYNAMIC BRIDGE) ---
-            model.addConstr(self.V_heat[t, scenario] == net_electrical_input * cop_vector_15min[t],
+            model.addConstr((self.V_heat[t, scenario] / cop_vector_15min[t]) + (self.V_cool[t, scenario] / cop_cool_vector_15min[t]) == net_electrical_input,
                             name=f"net_electrical_thermal_bridge_{self.name}_t{t}_{scenario}")
             model.addConstr(self.V_heat[t, scenario] == self.V_heat_DA[t, scenario] + self.V_heat_bal_down[t, scenario],
                             name=f"thermal_output_summation_{self.name}_t{t}_{scenario}")
