@@ -52,7 +52,7 @@ time_index = pd.date_range(start='2025-01-01', periods=8760, freq='h')
 BIOMASS_PRICE = 0.05  # Euro/kWh
 gas_prices_monthly = 0.056
 
-# Monthly gas prices in EUR/kWh
+# Monthly gas prices in EUR/kWh => Source: (https://www.protergia.gr/en/home/natural-gas/ttf-prices-per-month/)
 #monthly_gas_prices = {
     #1: 0.045058 * 1.15, 2: 0.048140 * 1.15, 3: 0.047140 * 1.15,
     #4: 0.041960 * 1.15, 5: 0.035622 * 1.15, 6: 0.035340 * 1.15,
