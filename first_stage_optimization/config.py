@@ -36,7 +36,8 @@ TECH_SWITCHES = {
     "BiomassBoiler": True,
     "CHP": True,
     "LargeScaleHeatPump": True,
-    "TES": True
+    "TES": True,
+    "LargeScaleChiller": False
 }
 
 # 2. Load Electricity Prices

@@ -14,12 +14,13 @@ from first_stage_optimization.CHP import CHP
 from first_stage_optimization.BiomassBoiler import BiomassBoiler
 from first_stage_optimization.LSHP import LargeScaleHeatPump
 from first_stage_optimization.TES import PitThermalEnergyStorage
+from first_stage_optimization.Chiller import LargeScaleChiller
 
 # --- PRE-MODELING CHECK ---
 # Verify the data is flowing
 print(f"Using CRF: {config.ANNUITY_FACTOR:.4f}")
 print(f"Average COP: {sum(config.COP_VEC) / 8760:.2f}")
-print(f"Average ccoling COP: {sum(config.COP_COOL_VEC) / 8760:.2f}")
+print(f"Average cooling COP: {sum(config.COP_COOL_VEC) / 8760:.2f}")
 
 # --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
 # Load the final MWh file
@@ -45,38 +46,57 @@ timesteps = range(8760)  # Hourly resolution for one year
 model.setParam('MIPGap', 0.01) #for making it run faster
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
+# 1. Check experiment conditions
+lshp_enabled = config.TECH_SWITCHES.get("LargeScaleHeatPump", True)
+tes_enabled = config.TECH_SWITCHES.get("TES", True)
+
+# The chiller is only active if BOTH LSHP and TES are False
+chiller_enabled = (not lshp_enabled) and (not tes_enabled)
+
 all_techs = {
     "BiomassBoiler": BiomassBoiler("BB"),
     "CHP": CHP("CHP"),
     "LargeScaleHeatPump": LargeScaleHeatPump("HP")
 }
 
-technologies = [obj for name, obj in all_techs.items() if config.TECH_SWITCHES.get(name, True)]
+# Inject chiller dynamically into the experiment if condition is met
+if chiller_enabled:
+    all_techs["Chiller"] = LargeScaleChiller("CH")
+
+# Filter tech based on config switches + chiller
+technologies = []
+for name, obj in all_techs.items():
+    if name == "Chiller":
+        technologies.append(obj) # Already determined by chiller_enabled flag
+    elif config.TECH_SWITCHES.get(name, True):
+        technologies.append(obj)
 
 # 1. ADD ALL VARIABLES FIRST
 for tech in technologies:
     tech.add_variables(model, timesteps)
 
-tes_enabled = config.TECH_SWITCHES.get("TES", True)
 if tes_enabled:
     tes = PitThermalEnergyStorage("TES")
     tes.add_variables(model, timesteps) # Variables for TES added here
 
-# 2. ADD CONSTRAINTS LATER
+# 2. ADD CONSTRAINTS
 for tech in technologies:
     if isinstance(tech, LargeScaleHeatPump):
         tech.add_constraints(model, timesteps, config.COP_VEC, config.COP_COOL_VEC)
+    elif isinstance(tech, LargeScaleChiller):
+        tech.add_constraints(model, timesteps, config.COP_COOL_VEC) # Uses cooling vector
     else:
         tech.add_constraints(model, timesteps)
 
-# 3. NOW ADD TES CONSTRAINTS (Variables for HP now exist!)
 if tes_enabled:
-    tes.add_constraints(model, timesteps, hp_instance=all_techs["LargeScaleHeatPump"], peak_demand_kw=peak_demand_kw)
+    # Safe check: if LSHP is off, pass None or handle it inside your TES constraint file
+    hp_inst = all_techs["LargeScaleHeatPump"] if lshp_enabled else None
+    tes.add_constraints(model, timesteps, hp_instance=hp_inst, peak_demand_kw=peak_demand_kw)
 
 # --- STEP 3: GLOBAL ENERGY BALANCE ---
 # Heat production from all units must meet demand every hour
 model.addConstrs(
-    (gp.quicksum(tech.V_heat[t] for tech in technologies) + (tes.V_disch[t] - tes.U_charge[t] if tes_enabled else 0) == HEAT_DEMAND_VEC[t]
+    (gp.quicksum(tech.V_heat[t] for tech in technologies if hasattr(tech, 'V_heat')) + (tes.V_disch[t] - tes.U_charge[t] if tes_enabled else 0) == HEAT_DEMAND_VEC[t]
      for t in timesteps),
     name="Global_Heat_Demand_Balance"
 )
@@ -95,13 +115,17 @@ annual_investment = gp.quicksum(
 if tes_enabled:
     annual_investment += (tes.E_cap * tes.capex_per_kwh * config.ANNUITY_FACTOR)
 
-# Fuel costs (Use a conditional check for tech presence)
-fuel_costs = gp.quicksum(
-    (all_techs["BiomassBoiler"].U_biomass[t] * config.FUEL_PRICES["biomass"] if config.TECH_SWITCHES["BiomassBoiler"] else 0) +
-    (all_techs["CHP"].U_gas[t] * config.FUEL_PRICES["gas"] if config.TECH_SWITCHES["CHP"] else 0) +
-    (all_techs["LargeScaleHeatPump"].U_elec[t] * ELEC_PRICE_VEC[t] if config.TECH_SWITCHES["LargeScaleHeatPump"] else 0)
-    for t in timesteps
-)
+# Dynamic fuel and electricity costs calculation loop
+fuel_costs = 0
+for t in timesteps:
+    if config.TECH_SWITCHES.get("BiomassBoiler", True):
+        fuel_costs += all_techs["BiomassBoiler"].U_biomass[t] * config.FUEL_PRICES["biomass"]
+    if config.TECH_SWITCHES.get("CHP", True):
+        fuel_costs += all_techs["CHP"].U_gas[t] * config.FUEL_PRICES["gas"]
+    if lshp_enabled:
+        fuel_costs += all_techs["LargeScaleHeatPump"].U_elec[t] * ELEC_PRICE_VEC[t]
+    if chiller_enabled:
+        fuel_costs += all_techs["Chiller"].U_elec[t] * ELEC_PRICE_VEC[t]
 
 # Revenue from CHP electricity sales
 if config.TECH_SWITCHES["CHP"]:
@@ -126,11 +150,15 @@ if model.Status == GRB.OPTIMAL:
         print(f"Installed CHP Capacity: {all_techs['CHP'].P_cap.X:.2f} kW")
 
     # Check Heat Pump
-    if config.TECH_SWITCHES.get('LargeScaleHeatPump'):
+    if lshp_enabled:
         print(f"Installed LSHP Capacity: {all_techs['LargeScaleHeatPump'].P_cap.X:.2f} kW")
 
+    #Cgeck Chiller
+    if chiller_enabled:
+        print(f"Installed Chiller Capacity: {all_techs['Chiller'].P_cap.X:.2f} kW")
+
     # Check TES
-    if config.TECH_SWITCHES.get('TES'):
+    if tes_enabled:
         print(f"Installed TES Capacity: {tes.E_cap.X:.2f} kWh")
         tes_energy_kwh = tes.E_cap.X
 
@@ -198,7 +226,7 @@ if model.Status == GRB.OPTIMAL:
 
     # --- 2. TES OPERATION PLOTS ---
     # Only calculate and show TES plots if TES technology exists in the run
-    if config.TECH_SWITCHES.get("TES"):
+    if tes_enabled:
         charge_vals = [-tes.U_charge[t].X / 1000 for t in t_plot]
         disch_vals = [tes.V_disch[t].X / 1000 for t in t_plot]
         soc_vals = [tes.E_state[t].X / 1000 for t in t_plot]
@@ -235,18 +263,20 @@ if model.Status == GRB.OPTIMAL:
         create_tes_double_subplot(aug_slice, '13-26 August 2025')
 
     # --- 3. COOLING DISPATCH PLOTS ---
-    # Only show cooling plots if the Heat Pump is enabled
-    if config.TECH_SWITCHES.get("LargeScaleHeatPump"):
+    if lshp_enabled or chiller_enabled:
         def create_cool_dispatch_figure(period, title):
             plt.figure(figsize=(12, 6))
 
-            v_cool = [all_techs['LargeScaleHeatPump'].V_cool[i].X / 1000 for i in period]
+            if lshp_enabled:
+                v_cool = [all_techs['LargeScaleHeatPump'].V_cool[i].X / 1000 for i in period]
+                label = 'Heat Pump'
+                color = '#e74c3c'
+            else:
+                v_cool = [all_techs['Chiller'].V_cool[i].X / 1000 for i in period]
+                label = 'Chiller (AC)'
+                color = '#9b59b6'  # Distinct purple layout for Chiller
 
-            plt.stackplot([t_plot[i] for i in period],
-                          v_cool,
-                          labels=['Heat Pump'],
-                          colors=['#e74c3c'], alpha=0.8)
-
+            plt.stackplot([t_plot[i] for i in period], v_cool, labels=[label], colors=[color], alpha=0.8)
             plt.plot([t_plot[i] for i in period], [COOLING_DEMAND_VEC[i] / 1000 for i in period],
                      color='black', linestyle='--', linewidth=2, label='Total Demand')
             plt.title(title)
@@ -259,7 +289,6 @@ if model.Status == GRB.OPTIMAL:
 
 
         create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
-        create_cool_dispatch_figure(jan_slice, 'Cool Dispatch: January Zoom')
         create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom')
 
     # --- NEW: WRITE OPTIMAL CAPACITIES TO JSON FOR STAGE 2 ---
