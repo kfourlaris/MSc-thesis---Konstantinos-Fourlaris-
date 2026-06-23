@@ -307,3 +307,35 @@ if model.Status == GRB.OPTIMAL:
         json.dump(stage1_results, f, indent=4)
 
     print(f"\nSaved optimal footprints to JSON configuration: {json_output_path}")
+
+    # --- NEW: SAVE HEAT PUMP DISPATCH TO EXCEL ---
+    if lshp_enabled:
+        print("\nExporting Heat Pump data to Excel...")
+        hp_unit = all_techs['LargeScaleHeatPump']
+
+        # Define the path where you want to save the Excel file
+        excel_output_path = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/first_stage_optimization/lshp_operation.xlsx"
+
+        # Organize the periods into a dictionary for clean looping
+        tracked_periods = {
+            "January_Slice": jan_slice,
+            "August_Slice": aug_slice
+        }
+
+        # Use ExcelWriter to save multiple sheets to one file
+        with pd.ExcelWriter(excel_output_path) as writer:
+            for sheet_name, period_range in tracked_periods.items():
+                # Gather variables hour by hour for the specific period
+                export_data = {
+                    "Hour_of_Year": [t for t in period_range],
+                    "U_elec_kW": [hp_unit.U_elec[t].X for t in period_range],
+                    "V_heat_kW": [hp_unit.V_heat[t].X for t in period_range]
+                }
+
+                # Turn it into a DataFrame and write to its respective sheet
+                df_slice = pd.DataFrame(export_data)
+                df_slice.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        print(f"Successfully saved Heat Pump operational profiles to: {excel_output_path}")
+    else:
+        print("\nLarge Scale Heat Pump is disabled; skipping Excel export.")

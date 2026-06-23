@@ -143,7 +143,7 @@ if model.Status == GRB.OPTIMAL:
 
     # 2. Pre-calculate your specific financial breakdowns as pure numbers
     # Baseline cost = Total Cost - CAPEX - (Balancing Up + Balancing Down values)
-    calculated_baseline_cost = model.ObjVal - total_fixed_annual_investment - (numerical_bal_up + numerical_bal_down)
+    calculated_baseline_cost = model.ObjVal - total_fixed_annual_investment + numerical_bal_up - numerical_bal_down
     net_balancing_opex =  - numerical_bal_up + numerical_bal_down
 
     print("\n" + "=" * 65)
@@ -162,8 +162,8 @@ if model.Status == GRB.OPTIMAL:
     target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
 
     # Define your exact 1-week validation window
-    start_t = 1344
-    end_t = 2016
+    start_t = 1152
+    end_t = 2496
     week_timesteps = range(start_t, end_t)
 
     print(f"\nExtracting and rendering LSHP operational curves for Scenario: {target_scenario}...")
@@ -249,8 +249,8 @@ if model.Status == GRB.OPTIMAL:
 
     # Define the two distinct 1-week evaluation horizons (start_t, end_t, label)
     validation_periods = [
-        (1344, 2016, "Winter Week (Jan)"),
-        (20352, 21024, "Summer Week (Jul)")
+        (1152, 2496, "Winter Week (Jan)"),
+        (20640, 21984, "Summer Week (Jul)")
     ]
 
     print(f"\n" + "=" * 60)
