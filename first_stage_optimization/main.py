@@ -120,12 +120,20 @@ fuel_costs = 0
 for t in timesteps:
     if config.TECH_SWITCHES.get("BiomassBoiler", True):
         fuel_costs += all_techs["BiomassBoiler"].U_biomass[t] * config.FUEL_PRICES["biomass"]
-    if config.TECH_SWITCHES.get("CHP", True):
-        fuel_costs += all_techs["CHP"].U_gas[t] * config.FUEL_PRICES["gas"]
     if lshp_enabled:
         fuel_costs += all_techs["LargeScaleHeatPump"].U_elec[t] * ELEC_PRICE_VEC[t]
     if chiller_enabled:
         fuel_costs += all_techs["Chiller"].U_elec[t] * ELEC_PRICE_VEC[t]
+
+# 2. VECTORIZED FIX FOR CHP GAS:
+# This multiplies the entire 8760 U_gas array by the 8760 price array instantly!
+if config.TECH_SWITCHES.get("CHP", True):
+    chp_vars = [all_techs["CHP"].U_gas[t] for t in timesteps]
+    # .prod() pairs up the variable array and the numpy array instantly
+    fuel_costs += gp.quicksum(chp_vars[t] * config.FUEL_PRICES["gas"][t] for t in timesteps)
+
+    # Alternative ultra-fast method if you use MVar objects:
+    # fuel_costs += config.FUEL_PRICES["gas"] @ all_techs["CHP"].U_gas
 
 # Revenue from CHP electricity sales
 if config.TECH_SWITCHES["CHP"]:
