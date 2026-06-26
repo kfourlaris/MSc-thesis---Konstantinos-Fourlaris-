@@ -95,39 +95,43 @@ expected_operational_cost = 0
 for s in config2.SCENARIOS:
     prob = config2.PROBABILITY[s]
 
-    # Baseline fuel expenditures & baseline day-ahead electricity purchases
-    baseline_spending_s = gp.quicksum(
-        ((boiler.U_biomass[t, s] * 0.25) * config2.FUEL_PRICES["biomass"]) +
-        ((chp.U_gas[t, s] * 0.25) * config2.FUEL_PRICES["gas"]) +
-        ((lshp.U_elec[t, s] * 0.25) * config2.DYNAMIC_ELEC_PRICES_15MIN[t])
-        for t in timesteps_15min
-    )
+    # --- SPEED WORKAROUND: PRE-EXTRACT ALL VARIABLE ARRAYS FOR SCENARIO S ---
+    #Baseline operation
+    bb_biomass_vars = [boiler.U_biomass[t, s] for t in timesteps_15min]
+    chp_gas_vars = [chp.U_gas[t, s] for t in timesteps_15min]
+    lshp_elec_vars = [lshp.U_elec[t, s] for t in timesteps_15min]
+    chp_elec_vars = [chp.V_elec[t, s] for t in timesteps_15min]
+    lshp_bal_up_vars = [lshp.V_balancing_up[t, s] for t in timesteps_15min]
+    lshp_bal_dn_vars = [lshp.V_balancing_down[t, s] for t in timesteps_15min]
 
-    # Steady baseline spot-market revenues from CHP generation exports
-    baseline_revenue_s = gp.quicksum(
-        (chp.V_elec[t, s] * 0.25) * config2.ELEC_REVENUE
-        for t in timesteps_15min
-    )
+    # --- 1. VECTORIZED BASELINE EXPENDITURES (0.25h * Power * Price) ---
+    # Biomass (Constant price scalar)
+    biomass_spending = gp.quicksum(bb_biomass_vars) * (0.25 * config2.FUEL_PRICES["biomass"])
 
-    # Balancing Upward Revenue (Paid to the Heat Pump for REDUCING consumption)
-    # Always subtract because it is a direct revenue stream
-    bal_arbitrage_up_s = gp.quicksum(
-        (lshp.V_balancing_up[t, s] * 0.25) * config2.BAL_PRICE_UP[s][t]
-        for t in timesteps_15min
-    )
+    # Gas (Stretched 35040 vector array)
+    gas_spending = gp.quicksum(chp_gas_vars[t] * config2.FUEL_PRICES["gas"][t] for t in timesteps_15min) * 0.25
 
-    #Balancing Downward Effect (Paid/Billed to the Heat Pump for INCREASING consumption)
-    # Always add because the Excel signs automatically dictate the financial flow:
-    #   - If price is Negative: adding a negative drops your cost (Desperate grid pays you)
-    #   - If price is Positive: adding a positive adds a cheap cost (Discounted charging)
+    # Electricity (Stretched 35040 vector array)
+    elec_spending = gp.quicksum(
+        lshp_elec_vars[t] * config2.DYNAMIC_ELEC_PRICES_15MIN[t] for t in timesteps_15min) * 0.25
+
+    baseline_spending_s = biomass_spending + gas_spending + elec_spending
+
+    # --- 2. VECTORIZED MARKET REVENUE & BALANCING ARBITRAGE ARRAYS ---
+    # CHP Forward Contract Export Revenue
+    baseline_revenue_s = gp.quicksum(chp_elec_vars) * (0.25 * config2.ELEC_REVENUE)
+
+    # Balancing Upward Revenue
+    bal_arbitrage_up_s = gp.quicksum(lshp_bal_up_vars[t] * config2.BAL_PRICE_UP[s][t] for t in timesteps_15min) * 0.25
+
+    # Balancing Downward Impact
     bal_arbitrage_down_s = gp.quicksum(
-        (lshp.V_balancing_down[t, s] * 0.25) * config2.BAL_PRICE_DOWN[s][t]
-        for t in timesteps_15min
-    )
+        lshp_bal_dn_vars[t] * config2.BAL_PRICE_DOWN[s][t] for t in timesteps_15min) * 0.25
 
     # Aggregate net scenario operational result multiplied by probability metric
     expected_operational_cost += prob * (
-                baseline_spending_s - baseline_revenue_s -  bal_arbitrage_up_s + bal_arbitrage_down_s)
+            baseline_spending_s - baseline_revenue_s - bal_arbitrage_up_s + bal_arbitrage_down_s
+    )
 
 # Establish Unified Optimization Goal
 model.setObjective(total_fixed_annual_investment + expected_operational_cost, GRB.MINIMIZE)
