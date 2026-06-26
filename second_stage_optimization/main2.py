@@ -11,6 +11,7 @@ from second_stage_optimization.BiomassBoiler2 import BiomassBoiler15Min
 from second_stage_optimization.CHP2 import CHP15Min
 from second_stage_optimization.LSHP2 import LargeScaleHeatPump15Min
 from second_stage_optimization.TES2 import PitThermalEnergyStorage15Min
+from second_stage_optimization.config2 import HEAT_DEMAND_15MIN, COOLING_DEMAND_15MIN
 
 # --- STEP 0: PRE-CHECK CONFIGURATION FLOW ---
 print(f"--- Running Stage 2 Balancing Market Optimization for: {config2.SELECTED_CITY} ---")
@@ -159,6 +160,37 @@ if model.Status == GRB.OPTIMAL:
     print(f" -> Expected Multi-Scenario Baseline Cost:     {calculated_baseline_cost:15,.2f} Euro")
     print(f" -> Balancing Participation Net Opex:          {net_balancing_opex:15,.2f} Euro")
     print("=" * 65)
+
+    # =========================================================================
+    # --- NEW: LEVELIZED COST OF DHCN ENERGY ---
+    # =========================================================================
+    print("\n" + "=" * 55)
+    print("  FINANCIAL ANALYSIS: LEVELIZED COST OF DHCN ENERGY")
+    print("=" * 55)
+
+    # 1. NOMINATOR: Total Annualized System Costs (Investment + OPEX + Fuels - Revenue)
+    # model.ObjVal extracts the fully minimized net annual system expenditure from Gurobi optimization
+    nominator_annual_cost_eur = model.ObjVal
+
+    # 2. DENOMINATOR: Combined Heat & Cooling Demand (MWh & kWh)
+    annual_heat_demand_kwh = sum(HEAT_DEMAND_15MIN)
+    annual_cool_demand_kwh = sum(COOLING_DEMAND_15MIN)
+    total_annual_energy_demand_kwh = annual_heat_demand_kwh + annual_cool_demand_kwh
+
+    total_annual_energy_demand_mwh = total_annual_energy_demand_kwh / 1000
+
+    # 3. Ratio Calculation
+    lcoe_dhcn_eur_kwh = nominator_annual_cost_eur / total_annual_energy_demand_kwh
+    lcoe_dhcn_eur_mwh = nominator_annual_cost_eur / total_annual_energy_demand_mwh
+
+    print(f"Total Net Annual Cost (Nominator):     {nominator_annual_cost_eur:,.2f} EUR/year")
+    print(f"Annual Network Thermal Demand Met:     {total_annual_energy_demand_mwh:,.2f} MWh/year")
+    print("-" * 55)
+    print(f"Levelized Cost of DHCN Energy:")
+    print(f" -> {lcoe_dhcn_eur_kwh:.6f} EUR/kWh")
+    print(f" -> {lcoe_dhcn_eur_mwh:.2f} EUR/MWh")
+
+    print("=" * 55 + "\n")
 
     # =========================================================================
     # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---

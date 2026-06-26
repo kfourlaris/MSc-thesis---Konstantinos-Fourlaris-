@@ -154,7 +154,7 @@ ELEC_REVENUE = 0.10                             # Base market price for CHP sale
 # =============================================================================
 # 3. HIGH-RESOLUTION TIMESTEP DATA EXPANSION (8760 -> 35040)
 # =============================================================================
-SELECTED_CITY = "Amsterdam"
+SELECTED_CITY = "Zurich"
 DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
 PRICE_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/DAM_Prices_2025_Consolidated.xlsx'
 
