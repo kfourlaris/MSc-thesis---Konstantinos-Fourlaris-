@@ -80,9 +80,9 @@ carbon_df.loc['2025-12-31'] = carbon_df.loc['2025-12-30']
 daily_carbon_prices = carbon_df['price'].values
 
 # 3. Define the conversion factor (EUR/tonne of CO2 to EUR/kWh of natural gas)
-conversion_factor = 0.000201
+conversion_factor = 0.000201  #Source = (https://www.volker-quaschning.de/datserv/CO2-spez/index_e.php)
 
-# 4. Baseline monthly gas prices in EUR/kWh
+# 4. Baseline monthly gas prices in EUR/kWh (Source = https://www.protergia.gr/en/home/natural-gas/ttf-prices-per-month/)
 monthly_gas_prices_base = {
     1: 0.045058 * 1.15, 2: 0.048140 * 1.15, 3: 0.047140 * 1.15,
     4: 0.041960 * 1.15, 5: 0.035622 * 1.15, 6: 0.035340 * 1.15,

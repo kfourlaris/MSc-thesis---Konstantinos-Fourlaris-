@@ -23,7 +23,7 @@ print(f"Average cooling COP: {sum(config3.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization_new_approach")
-model.setParam('MIPGap', 0.08)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.06)  # Maintain identical performance gap target
 # Force Gurobi to use the deterministic Barrier Method (skips concurrent wait)
 model.setParam('Method', 3)
 
@@ -108,7 +108,7 @@ for s in config3.SCENARIOS:
     # Baseline fuel expenditures & baseline day-ahead electricity purchases
     baseline_spending_s = gp.quicksum(
         ((boiler.U_biomass[t] * 0.25) * config3.FUEL_PRICES["biomass"]) +        # <--- Corrected
-        ((chp.U_gas[t] * 0.25) * config3.FUEL_PRICES["gas"]) +                  # <--- Corrected
+        ((chp.U_gas[t] * 0.25) * config3.FUEL_PRICES["gas"][t]) +                  # <--- Corrected
         ((lshp.U_elec[t] * 0.25) * config3.DYNAMIC_ELEC_PRICES_15MIN[t])        # <--- Corrected
         for t in timesteps_15min
     )

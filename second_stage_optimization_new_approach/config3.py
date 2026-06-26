@@ -54,13 +54,108 @@ def _calculate_annuity_factor(i, n):
 ANNUITY_FACTOR = _calculate_annuity_factor(INTEREST_RATE, LIFESPAN)
 
 # Market Variable Baselines
-FUEL_PRICES = {"biomass": 0.05, "gas": 0.056}  # Euro/kWh
+#BIOMASS PRICE
+BIOMASS_PRICE = 0.05  # Euro/kWh
+
+#GAS PRICE
+# 1. Read the CSV file containing the carbon costs (EU ETS Emissions CO2 Costs)
+carbon_csv_path = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/eu_ets_2025.csv'
+carbon_df = pd.read_csv(carbon_csv_path)
+
+# Ensure the date column is parsed as datetime objects and sorted sequentially
+carbon_df['date'] = pd.to_datetime(carbon_df['date'])
+carbon_df.set_index('date', inplace=True)
+
+# Generate an explicit, complete 365-day calendar target index for 2025
+full_year_days = pd.date_range(start='2025-01-01', end='2025-12-31', freq='D')
+carbon_df = carbon_df.reindex(full_year_days)
+
+# 3. Apply your custom handling for missing start/end boundary values:
+# For Jan 1st (2025-01-01), backward-fill from Jan 2nd
+carbon_df.loc['2025-01-01'] = carbon_df.loc['2025-01-02']
+# For Dec 31st (2025-12-31), forward-fill from Dec 30th
+carbon_df.loc['2025-12-31'] = carbon_df.loc['2025-12-30']
+
+# 2. Extract the clean sequence of daily carbon prices (365 values)
+daily_carbon_prices = carbon_df['price'].values
+
+# 3. Define the conversion factor (EUR/tonne of CO2 to EUR/kWh of natural gas)
+conversion_factor = 0.000201  #Source = (https://www.volker-quaschning.de/datserv/CO2-spez/index_e.php)
+
+# 4. Baseline monthly gas prices in EUR/kWh (Source = https://www.protergia.gr/en/home/natural-gas/ttf-prices-per-month/)
+monthly_gas_prices_base = {
+    1: 0.045058 * 1.15, 2: 0.048140 * 1.15, 3: 0.047140 * 1.15,
+    4: 0.041960 * 1.15, 5: 0.035622 * 1.15, 6: 0.035340 * 1.15,
+    7: 0.036697 * 1.15, 8: 0.033847 * 1.15, 9: 0.032869 * 1.15,
+    10: 0.032343 * 1.15, 11: 0.031946 * 1.15, 12: 0.030884 * 1.15,
+}
+
+# 5. Initialize the flat 8760 hours array
+gas_input_prices_hourly = np.zeros(8760)
+
+# 6. Map base prices AND day-by-day carbon costs directly to each hour
+# Loop through all 365 days of the year, converting each day to its 24 hourly values
+for day in range(365):
+    hour_start = day * 24
+    hour_end = hour_start + 24
+
+    # Identify which month this specific day falls under (for Non-Leap Years)
+    # Day index ranges: Jan (0-30), Feb (31-58), Mar (59-89), etc.
+    if day < 31:
+        month = 1  # January
+    elif day < 59:
+        month = 2  # February
+    elif day < 90:
+        month = 3  # March
+    elif day < 120:
+        month = 4  # April
+    elif day < 151:
+        month = 5  # May
+    elif day < 181:
+        month = 6  # June
+    elif day < 212:
+        month = 7  # July
+    elif day < 243:
+        month = 8  # August
+    elif day < 273:
+        month = 9  # September
+    elif day < 304:
+        month = 10  # October
+    elif day < 334:
+        month = 11  # November
+    else:
+        month = 12  # December
+
+    # Extract the specific base price for this month
+    base_price = monthly_gas_prices_base[month]
+
+    # Extract the exact carbon price for this specific day
+    carbon_price_today = daily_carbon_prices[day]
+
+    # Apply the equation per hour block: base_price + (daily_carbon * conversion_factor)
+    gas_input_prices_hourly[hour_start:hour_end] = base_price + (carbon_price_today * conversion_factor)
+
+# Duplicate every single hourly gas price 4 times sequentially for 15-minute blocks
+gas_input_prices_15min = np.array([val for val in gas_input_prices_hourly for _ in range(4)])
+
+print(f"Hourly gas array size generated: {len(gas_input_prices_hourly)}")
+print(f"Expanded 15-min gas array size for Stage 2: {len(gas_input_prices_15min)}")
+
+# Verify the first two hours (8 quarter-hour steps) match
+print("First 8 15-minute gas prices:")
+print(gas_input_prices_15min[:8])
+
+FUEL_PRICES = {
+    "biomass": BIOMASS_PRICE,
+    "gas": gas_input_prices_15min
+}
+
 ELEC_REVENUE = 0.10                             # Base market price for CHP sales
 
 # =============================================================================
 # 3. HIGH-RESOLUTION TIMESTEP DATA EXPANSION (8760 -> 35040)
 # =============================================================================
-SELECTED_CITY = "Amsterdam"
+SELECTED_CITY = "Zurich"
 DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
 PRICE_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/DAM_Prices_2025_Consolidated.xlsx'
 
