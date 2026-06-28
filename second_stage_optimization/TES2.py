@@ -5,7 +5,7 @@ class PitThermalEnergyStorage15Min:
     def __init__(self, name, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
         """
         Second-Stage 15-Minute Operational Class for Pit Thermal Energy Storage (TES).
-        Reads installed footprint and financial overhead directly from config_installed.py
+        Reads installed footprint and financial overhead directly from config.py
         """
         self.name = name
         self.eta_c = eta_charge

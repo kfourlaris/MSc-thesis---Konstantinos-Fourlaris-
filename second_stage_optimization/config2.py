@@ -135,7 +135,7 @@ for day in range(365):
     # Apply the equation per hour block: base_price + (daily_carbon * conversion_factor)
     gas_input_prices_hourly[hour_start:hour_end] = base_price + (carbon_price_today * conversion_factor)
 
-# Duplicate every single hourly gas price 4 times sequentially for 15-minute blocks
+# Duplicate every single hourly gas price 4 times sequentially for 15-minute blocks to generate 35040 timeseries
 gas_input_prices_15min = np.array([val for val in gas_input_prices_hourly for _ in range(4)])
 
 print(f"Hourly gas array size generated: {len(gas_input_prices_hourly)}")

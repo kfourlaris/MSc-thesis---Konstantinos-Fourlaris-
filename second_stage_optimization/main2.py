@@ -265,7 +265,7 @@ if model.Status == GRB.OPTIMAL:
 
     # Chart decorations
     plt.title(
-        f'Zurich LSHP Electrical Dispatch Validation | Scenario {target_scenario} (Timesteps {start_t} - {end_t})',
+        f'LSHP Electrical Dispatch Validation | Scenario {target_scenario} (Timesteps {start_t} - {end_t})',
         fontsize=13, fontweight='bold')
     plt.xlabel('15-Minute Operational Intervals', fontsize=11)
     plt.ylabel('Electrical Power Demand (kW)', fontsize=11)
@@ -324,7 +324,7 @@ if model.Status == GRB.OPTIMAL:
                       colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6'], alpha=0.8)
         plt.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
 
-        plt.title(f'Zurich District Heating Dispatch Stack — {period_label} [Scenario: {target_scenario}]', fontsize=12,
+        plt.title(f'District Heating Dispatch Stack — {period_label} [Scenario: {target_scenario}]', fontsize=12,
                   fontweight='bold')
         plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
         plt.ylabel('Thermal Power Level (MW)', fontsize=11)
@@ -363,7 +363,7 @@ if model.Status == GRB.OPTIMAL:
         plt.plot(hour_range, cooling_demand_mw, color='black', linestyle='--', linewidth=1.8,
                  label='Town Cooling Demand')
 
-        plt.title(f'Zurich District Cooling Network Dispatch — {period_label} [Scenario: {target_scenario}]',
+        plt.title(f'District Cooling Network Dispatch — {period_label} [Scenario: {target_scenario}]',
                   fontsize=12, fontweight='bold')
         plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
         plt.ylabel('Cooling Power Level (MW)', fontsize=11)

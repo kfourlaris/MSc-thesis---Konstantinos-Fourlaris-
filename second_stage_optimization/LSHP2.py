@@ -5,7 +5,7 @@ class LargeScaleHeatPump15Min:
     def __init__(self, name, min_load_fraction=0.15):
         """
         Second-Stage 15-Minute Operational Class for a Large-Scale Heat Pump.
-        Reads installed footprint and financial overhead directly from config_installed.py
+        Reads installed footprint and financial overhead directly from config.py
 
         Note: self.P_cap tracks the installed THERMAL capacity (kW_th).
         """
@@ -28,8 +28,8 @@ class LargeScaleHeatPump15Min:
         self.y_heat = {}  # Binary active heating mode
         self.y_cool = {}  # Binary active cooling mode
         self.V_heat = {}  # Output heat power rate (kW_th)
-        self.V_heat_DA = {}
-        self.V_heat_bal_down = {}
+        self.V_heat_DA = {} # Output heat based on the electricity bought in the DAM
+        self.V_heat_bal_down = {} # Output heat based on the electricity bought in the BM
         self.V_cool = {}  # Output cooling power rate (kW_cool)
         self.U_elec = {}  # Baseline input electricity power rate (kW_el)
 
@@ -107,7 +107,7 @@ class LargeScaleHeatPump15Min:
         Enforces 15-minute technology constraints with strict directional binary market lockout rules.
         """
         for t in timesteps_15min:
-            # --- 0. COMMITMENT AND SCHEDULING MODE SWITCHES ---
+            # --- 0. MUTUAL EXCLUSION OF PROVIDING HEAT AND COOL AT THE SAME TIME ---
             model.addConstr(self.y_heat[t, scenario] + self.y_cool[t, scenario] <= self.y_on[t, scenario],
                             name=f"exclusive_thermal_mode_{self.name}_t{t}_{scenario}")
 
@@ -115,7 +115,7 @@ class LargeScaleHeatPump15Min:
             net_electrical_input = self.U_elec[t, scenario] + self.V_balancing_down[t, scenario] - self.V_balancing_up[
                 t, scenario]
 
-            # --- 2. PERFORMANCE CONSTRAINTS (THE TRUE THERMODYNAMIC BRIDGE) ---
+            # --- 2. PERFORMANCE CONSTRAINTS  ---
             model.addConstr((self.V_heat[t, scenario] / cop_vector_15min[t]) + (self.V_cool[t, scenario] / cop_cool_vector_15min[t]) == net_electrical_input,
                             name=f"net_electrical_thermal_bridge_{self.name}_t{t}_{scenario}")
             model.addConstr(self.V_heat[t, scenario] == self.V_heat_DA[t, scenario] + self.V_heat_bal_down[t, scenario],
@@ -140,14 +140,14 @@ class LargeScaleHeatPump15Min:
                 name=f"bal_down_physical_limit_{self.name}_t{t}_{scenario}")
 
             # --- NEW PROPORTIONAL BID RATIO LIMIT ---
-            # Forces Balancing Down to scale realistically with your cleared baseline footprint.
-            # Max real-time increase is capped at 50% (0.5) of your current U_elec baseline.
+            # Forces Balancing Down to scale realistically with the cleared baseline input electricity.
+            # Max real-time increase is capped at 200% (x2) of the current U_elec baseline.
             model.addConstr(
                 self.V_balancing_down[t, scenario] <= 2 * self.U_elec[t, scenario],
                 name=f"bal_down_proportional_baseline_cap_{self.name}_t{t}_{scenario}"
             )
 
-            # 3.3. BINARY MUTUAL EXCLUSION REGULATION GATES
+            # 3.3. BINARY MUTUAL EXCLUSION REGULATION BALANCING GATES
             model.addConstr(self.V_balancing_down[t, scenario] <= max_elec_input * self.b_market_dir[t, scenario],
                             name=f"bal_down_binary_gate_{self.name}_t{t}_{scenario}")
             model.addConstr(self.V_balancing_up[t, scenario] <= max_elec_input * (1 - self.b_market_dir[t, scenario]),

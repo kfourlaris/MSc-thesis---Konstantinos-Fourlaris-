@@ -5,7 +5,7 @@ class CHP15Min:
     def __init__(self, name, efficiency_el=0.35, efficiency_th=0.65, min_load_fraction=0.15):
         """
         Second-Stage 15-Minute Operational Class for a Combined Heat and Power (CHP) plant.
-        Reads installed footprint and financial overhead directly from config_installed.py
+        Reads installed footprint and financial overhead directly from config.py
 
         Note: self.P_cap tracks the installed ELECTRICAL capacity (kW_el).
         """
@@ -71,16 +71,13 @@ class CHP15Min:
                 name=f"perf_th_{self.name}_t{t}_{scenario}"
             )
 
-            # 2. UPPER BOUND WITH BALANCING ROOM
-            # Total electrical generation (baseline output + balancing commitments)
-            # cannot physically overshoot your fixed capacity parameter.
+            # 2. UPPER BOUND BASED ON HEAT PRODUCTION
             model.addConstr(
                 self.V_heat[t, scenario] <= self.P_cap * self.y_on[t, scenario],
                 name=f"up_bound_fixed_P_{self.name}_t{t}_{scenario}"
             )
 
-            # 3. LOWER BOUND
-            # Minimum stable electrical footprint requirement when turned on
+            # 3. LOWER BOUND BASED ON HEAT PRODUCTION
             model.addConstr(
                 self.V_heat[t, scenario] >= self.delta * self.P_cap * self.y_on[t, scenario],
                 name=f"low_bound_fixed_P_{self.name}_t{t}_{scenario}"
