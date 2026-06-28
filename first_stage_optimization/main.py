@@ -33,7 +33,7 @@ selected_col_cool = config.CITY_CONFIG[config.SELECTED_CITY]["cool_col"]
 selected_elec_col = config.CITY_CONFIG[config.SELECTED_CITY]["elec_price_col"]
 
 # Extract the hourly values as a list (8760 values)
-# Note: Since your model uses kW, and the file is in MWh,
+# Note: Since the model uses kW, and the file is in MWh,
 # 1 MWh in one hour = 1000 kW power.
 HEAT_DEMAND_VEC = (df_demand[selected_col_heat] * 1000).tolist()
 COOLING_DEMAND_VEC = (df_demand[selected_col_cool] * 1000).tolist()
@@ -43,7 +43,7 @@ ELEC_PRICE_VEC = config.DYNAMIC_ELEC_PRICES.tolist()
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
 timesteps = range(8760)  # Hourly resolution for one year
-model.setParam('MIPGap', 0.01) #for making it run faster
+model.setParam('MIPGap', 0.01)
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 # 1. Check experiment conditions
@@ -107,7 +107,7 @@ model.addConstrs(
 )
 
 # --- STEP 4: OBJECTIVE FUNCTION ---
-# Minimize Total Annual Cost = Investment + OPEX + Fuel Costs - Electricity Revenue
+# Minimize Total Annual Cost = (Investment + Fixed OPEX) + (Fuel Costs + Carbon costs) - Electricity Revenue
 annual_investment = gp.quicksum(
     tech.P_cap * (tech.capex_per_kw * config.ANNUITY_FACTOR + tech.opex_per_kw) for tech in technologies
 )
@@ -126,14 +126,11 @@ for t in timesteps:
         fuel_costs += all_techs["Chiller"].U_elec[t] * ELEC_PRICE_VEC[t]
 
 # 2. VECTORIZED FIX FOR CHP GAS:
-# This multiplies the entire 8760 U_gas array by the 8760 price array instantly!
+# This multiplies the entire 8760 U_gas array by the 8760 price array instantly
 if config.TECH_SWITCHES.get("CHP", True):
     chp_vars = [all_techs["CHP"].U_gas[t] for t in timesteps]
     # .prod() pairs up the variable array and the numpy array instantly
     fuel_costs += gp.quicksum(chp_vars[t] * config.FUEL_PRICES["gas"][t] for t in timesteps)
-
-    # Alternative ultra-fast method if you use MVar objects:
-    # fuel_costs += config.FUEL_PRICES["gas"] @ all_techs["CHP"].U_gas
 
 # Revenue from CHP electricity sales
 if config.TECH_SWITCHES["CHP"]:
@@ -171,10 +168,9 @@ if model.Status == GRB.OPTIMAL:
         tes_energy_kwh = tes.E_cap.X
 
     # --- NEW: VOLUME CALCULATION ---
-    # Define your Delta T (DT).
+    # Define the Delta T (DT).
     # Example: If using 65°C supply and 25°C return (4th Gen target), DT = 40.
-    # The paper uses 60°C for their cavern.
-        delta_t = config.T_SINK - config.T_RETURN  # Replace with your specific DT value
+        delta_t = config.T_SINK - config.T_RETURN
 
     # Constant for water: 1.162 Wh per kg per degree Celsius
     # Convert to kWh: 0.001162 kWh / (kg * °C)
@@ -339,7 +335,7 @@ if model.Status == GRB.OPTIMAL:
         "TES": tes.E_cap.X if config.TECH_SWITCHES.get('TES') else 0.0
     }
 
-    # Explicitly save to your input data directory
+    # Explicitly save to the input data directory
     json_output_path = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/first_stage_optimization/stage1_optimal_capacities.json"
 
     with open(json_output_path, 'w') as f:
@@ -352,7 +348,7 @@ if model.Status == GRB.OPTIMAL:
         print("\nExporting Heat Pump data to Excel...")
         hp_unit = all_techs['LargeScaleHeatPump']
 
-        # Define the path where you want to save the Excel file
+        # Output path
         excel_output_path = "/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/first_stage_optimization/lshp_operation.xlsx"
 
         # Organize the periods into a dictionary for clean looping

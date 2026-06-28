@@ -21,12 +21,12 @@ CITY_CONFIG = {
     "Zurich": {
         "heat_col": "Zurich_Total_Heating_MWh",
         "cool_col": "Zurich_Total_Cooling_MWh",
-        "elec_price_col": "Swiss_DAM_Price_2025"  # Averaged profile for Switzerland
+        "elec_price_col": "Swiss_DAM_Price_2025"  # Actual 2025 price profile for Switzerland
     },
     "Amsterdam": {
         "heat_col": "Amsterdam_Total_Heating_MWh",
         "cool_col": "Amsterdam_Total_Cooling_MWh",
-        "elec_price_col": "Dutch_DAM_Price_2025" # Actual 2025 profile for NL
+        "elec_price_col": "Dutch_DAM_Price_2025" # Actual 2025 price profile for Netherlands
     }
 }
 
@@ -42,7 +42,7 @@ TECH_SWITCHES = {
 
 # 2. Load Electricity Prices
 df_prices = pd.read_excel(PRICE_DATA_PATH)
-# We convert EUR/MWh to EUR/kWh if your model uses kWh for energy (divide by 1000)
+# We convert EUR/MWh to EUR/kWh since the model uses kWh for energy (divide by 1000)
 elec_prices_kwh = df_prices[CITY_CONFIG[SELECTED_CITY]["elec_price_col"]].values / 1000
 
 # --- MARKET PRICES ---
@@ -78,6 +78,7 @@ daily_carbon_prices = carbon_df['price'].values
 conversion_factor = 0.000201 #Source = (https://www.volker-quaschning.de/datserv/CO2-spez/index_e.php)
 
 # 4. Baseline monthly gas prices in EUR/kWh (Source = https://www.protergia.gr/en/home/natural-gas/ttf-prices-per-month/)
+# Multiplication by 1.15 is about modeling any transportation and contract cost for delivering natural gas to the CHP power plant
 monthly_gas_prices_base = {
     1: 0.045058 * 1.15, 2: 0.048140 * 1.15, 3: 0.047140 * 1.15,
     4: 0.041960 * 1.15, 5: 0.035622 * 1.15, 6: 0.035340 * 1.15,
@@ -94,7 +95,7 @@ for day in range(365):
     hour_start = day * 24
     hour_end = hour_start + 24
 
-    # Identify which month this specific day falls under (for Non-Leap Years)
+    # Identify which month this specific day falls under (for Non-Leap Year 2025)
     # Day index ranges: Jan (0-30), Feb (31-58), Mar (59-89), etc.
     if day < 31:
         month = 1  # January
@@ -144,8 +145,7 @@ FUEL_PRICES = {
 ELEC_REVENUE = 0.10  # Selling price for CHP electricity
 DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
-# --- DATA GENERATION (Ambient Temperatures) ---
-# Here we would later load Zurich/Amsterdam Excel/CSV files
+# --- DATA GENERATION (Water Temperatures (Lake/river)) ---
 monthly_temps = {
     1: 4, 2: 2, 3: 5, 4: 7, 5: 12, 6: 14,
     7: 17, 8: 18, 9: 15, 10: 11, 11: 7, 12: 4

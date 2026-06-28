@@ -59,7 +59,7 @@ class CHP:
         # 3. Minimum & Maximum Operating Power (Based on Electrical Capacity)
         for t in timesteps:
             # UPPER BOUNDS
-            # Electricity output capped by installed capacity and ON status
+            # Heat output capped by installed capacity and ON status
             model.addConstr(self.V_heat[t] <= self.P_cap, name=f"up_bound_P_{self.name}_{t}")
             model.addConstr(self.V_heat[t] <= self.y_on[t] * self.p_max, name=f"up_bound_y_{self.name}_{t}")
 

@@ -56,7 +56,7 @@ class LargeScaleHeatPump:
             # 2.a Ensure that unit is either cooling or heating (Mutual Exclusion)
             model.addConstr(self.y_heat[t] + self.y_cool[t] <= self.y_on[t], name=f"simultaneous_exclusion_{t}")
 
-            # 3. Performance constraint (The Electricity Bridge)
+            # 3. Performance constraint
             model.addConstr(
                 self.U_elec[t] == (self.V_heat[t] / cop_vector[t]) + (self.V_cool[t] / cop_cool_vector[t]),
                 name=f"elec_balance_{self.name}_{t}"

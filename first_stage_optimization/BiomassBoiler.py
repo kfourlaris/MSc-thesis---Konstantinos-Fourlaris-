@@ -61,7 +61,7 @@ class BiomassBoiler:
             model.addConstr(self.V_heat[t] <= self.P_cap, name=f"up_bound_P_{self.name}_{t}")
             model.addConstr(self.V_heat[t] <= self.y_on[t] * self.p_max, name=f"up_bound_y_{self.name}_{t}")
 
-            # 2. LOWER BOUND: If y=1, V_heat >= 0.1 * P_cap. If y=0, V_heat >= 0.
+            # 2. LOWER BOUND: If y=1, V_heat >= 0.1 * P_cap. If y=0, V_heat = 0.
             # We use another Big-M to "turn off" the 10% requirement when y=0
             model.addConstr(self.V_heat[t] >= self.delta * self.P_cap - (1 - self.y_on[t]) * self.p_max,
                             name=f"low_bound_{self.name}_{t}")
