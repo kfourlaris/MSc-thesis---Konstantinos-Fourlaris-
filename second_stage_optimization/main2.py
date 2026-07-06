@@ -24,7 +24,7 @@ print(f"Average cooling COP: {sum(config2.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization")
-model.setParam('MIPGap', 0.04)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.01)  # Maintain identical performance gap target
 
 timesteps_15min = range(35040)  # High-resolution time horizon (8760 * 4)
 
