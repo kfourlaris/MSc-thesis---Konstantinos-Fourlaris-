@@ -14,16 +14,16 @@ def calculate_final_energy_demands():
         'Zurich': {
             'Annual_Heat_MWh': 434340,  # Total Heat (SH + DHW) => Source: Ehub modeling and optimization of ERZ district heating network in Zurich
             'Annual_Cooling_MWh': 15202,  #296 hours above 25.5 oC in 2025 => 296/8464 = 0.035 of the heating demand
-            'DHW_Share_of_Heat': 0.20,  # 20% of total heat is DHW
-            'Network_Share_Res': 0.65,  # 65% Residential share of network
-            'Network_Share_Ter': 0.35  # 35% Tertiary share of network
+            'DHW_Share_of_Heat': 0.15,  # 15% of total heat is DHW
+            'Network_Share_Res': 0.70,  # 65% Residential share of network
+            'Network_Share_Ter': 0.30  # 35% Tertiary share of network
         },
         'Amsterdam': {
             'Annual_Heat_MWh': 434340,  # Total Heat (SH + DHW) => Same heat demand as in Zurich for compatibility => equal to Amsterdam-Zuid district
             'Annual_Cooling_MWh': 6515, #131 hours above 25.5 oC in 2025 => 131/8629 = 0.015 of the cooling demand
-            'DHW_Share_of_Heat': 0.30,  # 30% of total heat is DHW
-            'Network_Share_Res': 0.55,  # 55% Residential share of network
-            'Network_Share_Ter': 0.45  # 45% Tertiary share of network
+            'DHW_Share_of_Heat': 0.15,  # 15% of total heat is DHW
+            'Network_Share_Res': 0.70,  # 55% Residential share of network
+            'Network_Share_Ter': 0.30  # 45% Tertiary share of network
         },
         'Global': {
             'Cooling_Share_Res': 0.10,  # 10% Res for cooling
