@@ -77,8 +77,8 @@ def generate_consolidated_excel(base_path, ch_file, nl_file):
 
         # 3. Combine into final DataFrame
         # add a grid tarrif
-        grid_tarrif_CH = 49
-        grid_tarrif_NL = 30
+        grid_tarrif_CH = 49 #(https://www.ekz.ch/de/angebote/strom/tarife/tarife-geschaeftskunden-ab-100MWh.html)
+        grid_tarrif_NL = 30 #(https://www.tennet.eu/tariffs)
         # Check if arrays are same length (8760)
         min_len = min(len(swiss_2025_values), len(dutch_2025_values))
 
