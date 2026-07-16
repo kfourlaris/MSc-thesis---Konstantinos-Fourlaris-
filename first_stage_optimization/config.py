@@ -50,7 +50,7 @@ elec_prices_kwh = df_prices[CITY_CONFIG[SELECTED_CITY]["elec_price_col"]].values
 time_index = pd.date_range(start='2025-01-01', periods=8760, freq='h')
 
 #BIOMASS PRICE
-BIOMASS_PRICE = 0.05  # Euro/kWh
+BIOMASS_PRICE = 0.05  # Euro/kWh (https://doi.org/10.1016/j.heliyon.2024.e33322)
 
 #GAS PRICE
 # 1. Read the CSV file containing the carbon costs (EU ETS Emissions CO2 Costs) (Source = Python)
