@@ -23,7 +23,7 @@ print(f"Average cooling COP: {sum(config3.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization_new_approach")
-model.setParam('MIPGap', 0.06)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.01)  # Maintain identical performance gap target
 # Force Gurobi to use the deterministic Barrier Method (skips concurrent wait)
 model.setParam('Method', 3)
 
