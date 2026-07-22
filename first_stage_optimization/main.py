@@ -374,3 +374,85 @@ if model.Status == GRB.OPTIMAL:
         print(f"Successfully saved Heat Pump operational profiles to: {excel_output_path}")
     else:
         print("\nLarge Scale Heat Pump is disabled; skipping Excel export.")
+
+    # =========================================================================
+    # --- ENVIRONMENTAL ASSESSMENT: LIFECYCLE CARBON FOOTPRINT (Tons CO2-Eq) ---
+    # =========================================================================
+    print("\n" + "=" * 55)
+    print("         ENVIRONMENTAL ASSESSMENT REPORT (Annualized)")
+    print("=" * 55)
+
+    # 1. OPERATIONAL EMISSIONS (Scope 1, 2, and Upstream 3)
+    # -------------------------------------------------------------------------
+    total_u_elec_kwh = 0
+    total_u_gas_kwh = 0
+    total_u_biomass_kwh = 0
+
+    # Summing hourly operational vectors from Gurobi optimization results
+    for t in timesteps:
+        # Electricity consumption (LSHP + Chiller if active)
+        if lshp_enabled:
+            total_u_elec_kwh += all_techs["LargeScaleHeatPump"].U_elec[t].X
+        if chiller_enabled:
+            total_u_elec_kwh += all_techs["Chiller"].U_elec[t].X
+
+        # Natural Gas input for CHP
+        if config.TECH_SWITCHES.get("CHP"):
+            total_u_gas_kwh += all_techs["CHP"].U_gas[t].X
+
+        # Biomass input for Boiler
+        if config.TECH_SWITCHES.get("BiomassBoiler"):
+            total_u_biomass_kwh += all_techs["BiomassBoiler"].U_biomass[t].X
+
+    # Multiplying by standardized Ton CO2 / kWh variables from config
+    op_emissions_elec = total_u_elec_kwh * config.TON_CO2_EMISSION_FACTORS["electricity"]
+    op_emissions_gas = total_u_gas_kwh * config.TON_CO2_EMISSION_FACTORS["gas"]
+    op_emissions_biomass = total_u_biomass_kwh * config.TON_CO2_EMISSION_FACTORS["biomass"]
+    total_operational_emissions = op_emissions_elec + op_emissions_gas + op_emissions_biomass
+
+    # 2. EMBEDDED INFRASTRUCTURE EMISSIONS (Annualized)
+    # -------------------------------------------------------------------------
+    emb_emissions_boiler = 0.0
+    emb_emissions_chp = 0.0
+    emb_emissions_lshp = 0.0
+    emb_emissions_chiller = 0.0
+    emb_emissions_tes = 0.0
+
+    if config.TECH_SWITCHES.get('BiomassBoiler'):
+        emb_emissions_boiler = all_techs['BiomassBoiler'].P_cap.X * config.TON_CO2_EMISSION_FACTORS["biomass_embedded"]
+
+    if config.TECH_SWITCHES.get('CHP'):
+        emb_emissions_chp = all_techs['CHP'].P_cap.X * config.TON_CO2_EMISSION_FACTORS["chp_embedded"]
+
+    if lshp_enabled:
+        emb_emissions_lshp = all_techs['LargeScaleHeatPump'].P_cap.X * config.TON_CO2_EMISSION_FACTORS["lshp_embedded"]
+
+    if chiller_enabled:
+        emb_emissions_chiller = all_techs['Chiller'].P_cap.X * config.TON_CO2_EMISSION_FACTORS["lshp_embedded"]
+
+    if tes_enabled:
+        # Scales directly from your dynamically computed water storage volume variable
+        emb_emissions_tes = tes_volume_m3 * config.TON_CO2_EMISSION_FACTORS["tes_embedded"]
+
+    total_embedded_emissions = emb_emissions_boiler + emb_emissions_chp + emb_emissions_lshp + emb_emissions_chiller + emb_emissions_tes
+
+    # 3. CONSOLE REPORT GENERATION
+    # -------------------------------------------------------------------------
+    print("A. ANNUAL RUNTIME BREAKDOWN:")
+    print(f" -> Grid Electricity Consumption:   {op_emissions_elec:,.2f} Tons CO2-Eq/year")
+    print(f" -> Natural Gas Supply Chain Combustion: {op_emissions_gas:,.2f} Tons CO2-Eq/year")
+    print(f" -> Wet Biomass Fuel Supply Chain Combustion:  {op_emissions_biomass:,.2f} Tons CO2-Eq/year")
+    print(f" SUB-TOTAL OPERATIONAL EMISSIONS:    {total_operational_emissions:,.2f} Tons CO2-Eq/year\n")
+
+    print("B. ANNUALIZED EMBEDDED INFRASTRUCTURE:")
+    print(f" -> Biomass Boiler Setup:           {emb_emissions_boiler:,.2f} Tons CO2-Eq/year")
+    print(f" -> CHP Plant Infrastructure:       {emb_emissions_chp:,.2f} Tons CO2-Eq/year")
+    print(f" -> Large Scale Heat Pump Hardware:  {emb_emissions_lshp:,.2f} Tons CO2-Eq/year")
+    print(f" -> Pit Thermal Storage Excavation: {emb_emissions_tes:,.2f} Tons CO2-Eq/year")
+    print(f" -> Large Scale Chiller Hardware:    {emb_emissions_chiller:,.2f} Tons CO2-Eq/year")
+    print(f" SUB-TOTAL EMBEDDED EMISSIONS:       {total_embedded_emissions:,.2f} Tons CO2-Eq/year\n")
+
+    print("-" * 55)
+    total_experiment_emissions = total_operational_emissions + total_embedded_emissions
+    print(f"GLOBAL EXPERIMENT CARBON FOOTPRINT:  {total_experiment_emissions:,.2f} Tons CO2-Eq/year")
+    print("=" * 55 + "\n")
