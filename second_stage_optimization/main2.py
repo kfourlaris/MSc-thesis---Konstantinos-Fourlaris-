@@ -428,18 +428,18 @@ if model.Status == GRB.OPTIMAL:
 
     # 3. CONSOLE STOCHASTIC CARBON EMISSIONS OVERVIEW REPORT GENERATION
     print("A. PROBABILITY-WEIGHTED ANNUAL OPERATION RUNTIME:")
-    print(f" -> Expected Grid Electricity Consumption Footprint:  {expected_op_emissions_elec:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Expected Grid Electricity Consumption Footprint:           {expected_op_emissions_elec:15,.2f} Tons CO2-Eq/year")
     print(f" -> Expected Natural Gas Supply Chain Combustion Footprint:    {expected_op_emissions_gas:15,.2f} Tons CO2-Eq/year")
-    print(f" -> Expected Biomass Fuel Supply Chain Combustion Footprint:     {expected_op_emissions_biomass:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Expected Biomass Fuel Supply Chain Combustion Footprint:   {expected_op_emissions_biomass:15,.2f} Tons CO2-Eq/year")
     print(
-        f" SUB-TOTAL EXPECTED RUNTIME EMISSIONS:       {total_expected_operational_emissions:15,.2f} Tons CO2-Eq/year\n")
+        f" SUB-TOTAL EXPECTED RUNTIME EMISSIONS:                           {total_expected_operational_emissions:15,.2f} Tons CO2-Eq/year\n")
 
     print("B. ANNUALIZED EMBEDDED INFRASTRUCTURE SYSTEM EMISSIONS:")
-    print(f" -> Biomass Boiler Plant:      {emb_emissions_boiler:15,.2f} Tons CO2-Eq/year")
-    print(f" -> CHP Facility:       {emb_emissions_chp:15,.2f} Tons CO2-Eq/year")
-    print(f" -> Large-Scale Heat Pump:   {emb_emissions_lshp:15,.2f} Tons CO2-Eq/year")
-    print(f" -> Excavated Pit Thermal Storage:    {emb_emissions_tes:15,.2f} Tons CO2-Eq/year")
-    print(f" SUB-TOTAL INFRASTRUCTURE EMISSIONS:         {total_embedded_emissions:15,.2f} Tons CO2-Eq/year\n")
+    print(f" -> Biomass Boiler Plant:                {emb_emissions_boiler:15,.2f} Tons CO2-Eq/year")
+    print(f" -> CHP Facility:                        {emb_emissions_chp:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Large-Scale Heat Pump:               {emb_emissions_lshp:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Excavated Pit Thermal Storage:       {emb_emissions_tes:15,.2f} Tons CO2-Eq/year")
+    print(f" SUB-TOTAL INFRASTRUCTURE EMISSIONS:     {total_embedded_emissions:15,.2f} Tons CO2-Eq/year\n")
 
     print("-" * 65)
     global_experiment_emissions_stochastic = total_expected_operational_emissions + total_embedded_emissions
