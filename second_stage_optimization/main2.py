@@ -376,7 +376,76 @@ if model.Status == GRB.OPTIMAL:
     print("\nAll interactive loops compiled. Close all active figures to exit the Python thread process completely.")
     plt.show(block=True)
 
+    # =========================================================================
+    # --- STOCHASTIC ENVIRONMENTAL ASSESSMENT: CARBON FOOTPRINT ANALYSIS ---
+    # =========================================================================
+    print("\n" + "=" * 65)
+    print("      ENVIRONMENTAL PERFORMANCE ANALYSIS (Stochastic Expected Values)")
+    print("=" * 65)
+
+    expected_op_emissions_elec = 0.0
+    expected_op_emissions_gas = 0.0
+    expected_op_emissions_biomass = 0.0
+
+    # 1. PROCESS STOCHASTIC QUARTER-HOUR OPERATIONAL FLOWS
+    for s in config2.SCENARIOS:
+        prob = config2.PROBABILITY[s]
+
+        # Calculate real-time physical electricity grid draw across all timesteps for scenario 's'
+        scenario_u_elec_kw = 0.0
+        for t in timesteps_15min:
+            # Captures the true physical real-time import (Baseline + Bal_Down - Bal_Up)
+            net_elec_t = lshp.U_elec[t, s].X + lshp.V_balancing_down[t, s].X - lshp.V_balancing_up[t, s].X
+            scenario_u_elec_kw += net_elec_t
+
+        scenario_u_gas_kw = sum(chp.U_gas[t, s].X for t in timesteps_15min)
+        scenario_u_biomass_kw = sum(boiler.U_biomass[t, s].X for t in timesteps_15min)
+
+        # Convert kW power flow levels into integrated energy vectors (0.25h) * Emission Factor * Probability
+        expected_op_emissions_elec += prob * (
+                    scenario_u_elec_kw * 0.25 * config2.TON_CO2_EMISSION_FACTORS["electricity"])
+        expected_op_emissions_gas += prob * (scenario_u_gas_kw * 0.25 * config2.TON_CO2_EMISSION_FACTORS["gas"])
+        expected_op_emissions_biomass += prob * (
+                    scenario_u_biomass_kw * 0.25 * config2.TON_CO2_EMISSION_FACTORS["biomass"])
+
+    total_expected_operational_emissions = expected_op_emissions_elec + expected_op_emissions_gas + expected_op_emissions_biomass
+
+    # 2. PROCESS LOCKED HARDWARE INFRASTRUCTURE OVERHEAD
+    # Now explicitly referencing the global config2 module dictionary setup
+    emb_emissions_boiler = config2.INSTALLED_TECH["BiomassBoiler"]["P_cap"] * config2.TON_CO2_EMISSION_FACTORS[
+        "biomass_embedded"]
+    emb_emissions_chp = config2.INSTALLED_TECH["CHP"]["P_cap"] * config2.TON_CO2_EMISSION_FACTORS["chp_embedded"]
+    emb_emissions_lshp = config2.INSTALLED_TECH["LargeScaleHeatPump"]["P_cap"] * config2.TON_CO2_EMISSION_FACTORS[
+        "lshp_embedded"]
+
+    # Calculate required volume metric based on the optimized energy capacity parameter
+    delta_t = config2.T_SINK - config2.T_RETURN
+    tes_energy_kwh = config2.INSTALLED_TECH["TES"]["E_cap"]
+    tes_volume_m3_fixed = tes_energy_kwh / (1.162 * delta_t)
+    emb_emissions_tes = tes_volume_m3_fixed * config2.TON_CO2_EMISSION_FACTORS["tes_embedded"]
+
+    total_embedded_emissions = emb_emissions_boiler + emb_emissions_chp + emb_emissions_lshp + emb_emissions_tes
+
+    # 3. CONSOLE STOCHASTIC CARBON EMISSIONS OVERVIEW REPORT GENERATION
+    print("A. PROBABILITY-WEIGHTED ANNUAL OPERATION RUNTIME:")
+    print(f" -> Expected Grid Electricity Consumption Footprint:  {expected_op_emissions_elec:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Expected Natural Gas Supply Chain Combustion Footprint:    {expected_op_emissions_gas:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Expected Biomass Fuel Supply Chain Combustion Footprint:     {expected_op_emissions_biomass:15,.2f} Tons CO2-Eq/year")
+    print(
+        f" SUB-TOTAL EXPECTED RUNTIME EMISSIONS:       {total_expected_operational_emissions:15,.2f} Tons CO2-Eq/year\n")
+
+    print("B. ANNUALIZED EMBEDDED INFRASTRUCTURE SYSTEM EMISSIONS:")
+    print(f" -> Biomass Boiler Plant:      {emb_emissions_boiler:15,.2f} Tons CO2-Eq/year")
+    print(f" -> CHP Facility:       {emb_emissions_chp:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Large-Scale Heat Pump:   {emb_emissions_lshp:15,.2f} Tons CO2-Eq/year")
+    print(f" -> Excavated Pit Thermal Storage:    {emb_emissions_tes:15,.2f} Tons CO2-Eq/year")
+    print(f" SUB-TOTAL INFRASTRUCTURE EMISSIONS:         {total_embedded_emissions:15,.2f} Tons CO2-Eq/year\n")
+
+    print("-" * 65)
+    global_experiment_emissions_stochastic = total_expected_operational_emissions + total_embedded_emissions
+    print(
+        f"STOCHASTIC EXPECTED SYSTEM LIFE TOTAL FOOTPRINT: {global_experiment_emissions_stochastic:12,.2f} Tons CO2-Eq/year")
+    print("=" * 65 + "\n")
 
 else:
     print("Optimization terminated with status code:", model.Status)
-

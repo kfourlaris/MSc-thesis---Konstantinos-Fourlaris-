@@ -439,17 +439,17 @@ if model.Status == GRB.OPTIMAL:
     # 3. CONSOLE REPORT GENERATION
     # -------------------------------------------------------------------------
     print("A. ANNUAL RUNTIME BREAKDOWN:")
-    print(f" -> Grid Electricity Consumption:   {op_emissions_elec:,.2f} Tons CO2-Eq/year")
-    print(f" -> Natural Gas Supply Chain Combustion: {op_emissions_gas:,.2f} Tons CO2-Eq/year")
-    print(f" -> Wet Biomass Fuel Supply Chain Combustion:  {op_emissions_biomass:,.2f} Tons CO2-Eq/year")
+    print(f" -> Grid Electricity Consumption Footprint:   {op_emissions_elec:,.2f} Tons CO2-Eq/year")
+    print(f" -> Natural Gas Supply Chain Combustion Footprint: {op_emissions_gas:,.2f} Tons CO2-Eq/year")
+    print(f" -> Wet Biomass Fuel Supply Chain Combustion Footprint:  {op_emissions_biomass:,.2f} Tons CO2-Eq/year")
     print(f" SUB-TOTAL OPERATIONAL EMISSIONS:    {total_operational_emissions:,.2f} Tons CO2-Eq/year\n")
 
     print("B. ANNUALIZED EMBEDDED INFRASTRUCTURE:")
-    print(f" -> Biomass Boiler Setup:           {emb_emissions_boiler:,.2f} Tons CO2-Eq/year")
-    print(f" -> CHP Plant Infrastructure:       {emb_emissions_chp:,.2f} Tons CO2-Eq/year")
-    print(f" -> Large Scale Heat Pump Hardware:  {emb_emissions_lshp:,.2f} Tons CO2-Eq/year")
+    print(f" -> Biomass Boiler:           {emb_emissions_boiler:,.2f} Tons CO2-Eq/year")
+    print(f" -> CHP Plant:       {emb_emissions_chp:,.2f} Tons CO2-Eq/year")
+    print(f" -> Large Scale Heat Pump:  {emb_emissions_lshp:,.2f} Tons CO2-Eq/year")
     print(f" -> Pit Thermal Storage Excavation: {emb_emissions_tes:,.2f} Tons CO2-Eq/year")
-    print(f" -> Large Scale Chiller Hardware:    {emb_emissions_chiller:,.2f} Tons CO2-Eq/year")
+    print(f" -> Large Scale Chiller:    {emb_emissions_chiller:,.2f} Tons CO2-Eq/year")
     print(f" SUB-TOTAL EMBEDDED EMISSIONS:       {total_embedded_emissions:,.2f} Tons CO2-Eq/year\n")
 
     print("-" * 55)

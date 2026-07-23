@@ -258,3 +258,80 @@ BAL_PRICE_DOWN = {}
 for s in SCENARIOS:
     BAL_PRICE_UP[s] = (df_bal_prices[f"{s}_Balancing_Up"] / 1000).tolist()
     BAL_PRICE_DOWN[s] = (df_bal_prices[f"{s}_Balancing_Down"] / 1000).tolist()
+
+
+# =========================================================================
+# --- LIFE CYCLE ASSESSMENT (LCA) RAW EMISSION FACTORS & CONVERSIONS ---
+# =========================================================================
+
+# 1. OPERATIONAL EMISSIONS
+# -------------------------------------------------------------------------
+# Values map directly to Switzerland (CH) and the Netherlands (NL) EcoInvent dataset
+REGIONAL_LCA_DATA = {
+    "Zurich": {
+        "raw_em_elec_kg_kwh": 0.0194,   # market for electricity high voltage CH (kg CO2-Eq / KWh)
+        "raw_em_gas_kg_m3": 0.58,       # market for natural gas high pressure CH (kg CO2-Eq / m³)
+        "raw_em_biomass_kg_kg": 0.0488  # market for wood chips CH (kg CO2-Eq / kg)
+    },
+    "Amsterdam": {
+        "raw_em_elec_kg_kwh": 0.427,    # market for electricity high voltage NL (kg CO2-Eq / KWh)
+        "raw_em_gas_kg_m3": 0.451,      # market for natural gas high pressure NL (kg CO2-Eq / m³)
+        "raw_em_biomass_kg_kg": 0.0438  # market for wood chips (kg CO2-Eq / kg)
+    }
+}
+
+# 2. PHYSICAL CONVERSION PARAMETERS
+# -------------------------------------------------------------------------
+GAS_LHV_KWH_M3 = 10.55     # Lower Heating Value (LHV) of Natural Gas (~10.55 kWh/m³) source: Energy Statistics manual IEA
+BIOMASS_LHV_KWH_KG = 3.5   # Lower Heating Value (LHV) of usable wet wood chips (~3.5 kWh/kg) source: Typical calorific values of fuels
+
+# 3. DYNAMIC REGIONAL SELECTION
+# -------------------------------------------------------------------------
+# Automatically determines the active region based on SELECTED_CITY
+ACTIVE_REGION = "Zurich" if SELECTED_CITY == "Zurich" else "Amsterdam"
+
+# Extracting the raw values based on the active region
+_raw_elec = REGIONAL_LCA_DATA[ACTIVE_REGION]["raw_em_elec_kg_kwh"]
+_raw_gas = REGIONAL_LCA_DATA[ACTIVE_REGION]["raw_em_gas_kg_m3"]
+_raw_biomass = REGIONAL_LCA_DATA[ACTIVE_REGION]["raw_em_biomass_kg_kg"]
+
+# 4. STANDARDIZED CONVERSIONS (Calculated automatically in Tons CO2-Eq / kWh)
+# -------------------------------------------------------------------------
+# Convert kg to tons (/ 1000)
+
+# Electricity:
+EM_ELEC_Ton_KWH = _raw_elec / 1000
+
+# Natural Gas:
+EM_GAS_Ton_KWH = (_raw_gas / GAS_LHV_KWH_M3) / 1000
+
+# Biomass:
+EM_BIOMASS_Ton_KWH = (_raw_biomass / BIOMASS_LHV_KWH_KG) / 1000
+
+
+# 5. EMBEDDED INFRASTRUCTURE EMISSIONS (Common across locations)
+# -------------------------------------------------------------------------
+# EcoInvent metrics converted to Tons CO2-Eq per KW
+_EM_BOILER_PLANT_TON_KW = (55.8 / 1000) / LIFESPAN  # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
+_EM_CHP_PLANT_TON_KW = (54.4 / 1000) / LIFESPAN     # heat and power co-generation unit construction, 1MW electrical, components for heat only_Europe -> 5.44 * 10^4 kg co2 per 1000 KW
+_EM_TES_TON_M3 = (0.587 / 1000) / LIFESPAN          # excavation, hydraulic digger -> 0.587 kg co2 per m^3
+_EM_HP_TON_KG = 2.53 / 1000                         # market for industrial machine heavy unspecified -> 2.53 kg co2 per kg of machinery
+
+# HP and Chiller kilos to KW according to MAN brochure (50000 KW equal to 20000 kg):
+KG_PER_KW_MACHINERY = 0.4 # 1 KG OF MACHINERY EQUAL TO 0.4 KW of power
+_EM_HP_TON_KW = (_EM_HP_TON_KG * KG_PER_KW_MACHINERY) / LIFESPAN
+
+# 6. EXPORT PACK
+# -------------------------------------------------------------------------
+TON_CO2_EMISSION_FACTORS = {
+    # Operational vectors (per kWh)
+    "electricity": EM_ELEC_Ton_KWH,
+    "gas": EM_GAS_Ton_KWH,
+    "biomass": EM_BIOMASS_Ton_KWH,
+
+    # Capital assets footprint vectors (per kW or per m³)
+    "biomass_embedded": _EM_BOILER_PLANT_TON_KW,
+    "chp_embedded": _EM_CHP_PLANT_TON_KW,
+    "lshp_embedded": _EM_HP_TON_KW,
+    "tes_embedded": _EM_TES_TON_M3,
+}
