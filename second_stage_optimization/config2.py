@@ -269,12 +269,12 @@ for s in SCENARIOS:
 REGIONAL_LCA_DATA = {
     "Zurich": {
         "raw_em_elec_kg_kwh": 0.0194,   # market for electricity high voltage CH (kg CO2-Eq / KWh)
-        "raw_em_gas_kg_m3": 0.58,       # market for natural gas high pressure CH (kg CO2-Eq / m³)
+        "raw_em_gas_kg_m3": 0.58,       # market for natural gas high pressure CH TRANSPORTATION ONLY (kg CO2-Eq / m³)
         "raw_em_biomass_kg_kg": 0.0488  # market for wood chips CH (kg CO2-Eq / kg)
     },
     "Amsterdam": {
         "raw_em_elec_kg_kwh": 0.427,    # market for electricity high voltage NL (kg CO2-Eq / KWh)
-        "raw_em_gas_kg_m3": 0.451,      # market for natural gas high pressure NL (kg CO2-Eq / m³)
+        "raw_em_gas_kg_m3": 0.451,      # market for natural gas high pressure NL TRANSPORTATION ONLY (kg CO2-Eq / m³)
         "raw_em_biomass_kg_kg": 0.0438  # market for wood chips (kg CO2-Eq / kg)
     }
 }
@@ -283,6 +283,7 @@ REGIONAL_LCA_DATA = {
 # -------------------------------------------------------------------------
 GAS_LHV_KWH_M3 = 10.55     # Lower Heating Value (LHV) of Natural Gas (~10.55 kWh/m³) source: Energy Statistics manual IEA
 BIOMASS_LHV_KWH_KG = 3.5   # Lower Heating Value (LHV) of usable wet wood chips (~3.5 kWh/kg) source: Typical calorific values of fuels
+GAS_BURNING_KG_PER_KWH = 0.2   # Emissions from burning the natural gas 0.2 kg of CO2 per KWh source: https://www.volker-quaschning.de/datserv/CO2-spez/index_e.php
 
 # 3. DYNAMIC REGIONAL SELECTION
 # -------------------------------------------------------------------------
@@ -302,7 +303,7 @@ _raw_biomass = REGIONAL_LCA_DATA[ACTIVE_REGION]["raw_em_biomass_kg_kg"]
 EM_ELEC_Ton_KWH = _raw_elec / 1000
 
 # Natural Gas:
-EM_GAS_Ton_KWH = (_raw_gas / GAS_LHV_KWH_M3) / 1000
+EM_GAS_Ton_KWH = ((_raw_gas / GAS_LHV_KWH_M3) / 1000) + (GAS_BURNING_KG_PER_KWH / 1000)
 
 # Biomass:
 EM_BIOMASS_Ton_KWH = (_raw_biomass / BIOMASS_LHV_KWH_KG) / 1000
