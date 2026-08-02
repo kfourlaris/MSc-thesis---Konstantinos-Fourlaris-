@@ -326,6 +326,60 @@ if model.Status == GRB.OPTIMAL:
         create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
         create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom')
 
+    if tes_enabled and lshp_enabled:
+        tes_capacity_mwh = tes.E_cap.X / 1000
+        def create_combined_dispatch_soc_figure(period, title):
+            fig, ax1 = plt.subplots(figsize=(14, 7))
+            p_range = [t_plot[i] for i in period]
+
+            # 1. Extract values in MW
+            v_boiler = [
+                all_techs['BiomassBoiler'].V_heat[i].X / 1000 if config.TECH_SWITCHES.get("BiomassBoiler") else 0 for i
+                in period]
+            v_chp = [all_techs['CHP'].V_heat[i].X / 1000 if config.TECH_SWITCHES.get("CHP") else 0 for i in period]
+            v_hp = [all_techs['LargeScaleHeatPump'].V_heat[i].X / 1000 for i in period]
+            v_disch = [tes.V_disch[i].X / 1000 for i in period]
+            v_charge = [-tes.U_charge[i].X / 1000 for i in period]
+
+            # 2. Stack positive values (Generation + Discharging)
+            ax1.stackplot(p_range, v_boiler, v_chp, v_hp, v_disch,
+                          labels=['Biomass Boiler', 'CHP', 'Heat Pump', 'TES Discharging (+)'],
+                          colors=['#2ecc71', '#3498db', '#e74c3c', '#f1c40f'], alpha=0.8)
+
+            # 3. Plot negative values (Charging)
+            ax1.fill_between(p_range, 0, v_charge, label='TES Charging (-)', color='#2c3e50', alpha=0.85)
+
+            # 4. Plot Heat Demand Line
+            ax1.plot(p_range, [HEAT_DEMAND_VEC[i] / 1000 for i in period],
+                     color='black', linestyle='--', linewidth=2, label='Heat Demand')
+
+            # Formatting Left Axis (Power)
+            ax1.axhline(0, color='black', linewidth=1.2)
+            ax1.set_xlabel('Hour of the Year', fontsize=11)
+            ax1.set_ylabel('Power Flow (MW)', fontsize=11)
+            ax1.set_title(title, fontsize=13, fontweight='bold', pad=15)
+            ax1.grid(axis='y', linestyle=':', alpha=0.6)
+
+            # 5. Twin axis for State of Charge (SoC) Line on the Right
+            ax2 = ax1.twinx()
+            soc_mwh = [(tes.E_state[i].X / 1000) / tes_capacity_mwh * 100 for i in period]
+            ax2.plot(p_range, soc_mwh, color='#8e44ad', linewidth=2.5, label='TES State of Charge')
+            ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=11)
+            ax2.tick_params(axis='y', labelcolor='#8e44ad')
+
+            # Combine legends from both axes into a single box
+            lines_1, labels_1 = ax1.get_legend_handles_labels()
+            lines_2, labels_2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper right', frameon=True, facecolor='white',
+                       framealpha=0.95)
+
+            plt.tight_layout()
+            plt.show()
+
+        # Generate plots for January and August slices
+        create_combined_dispatch_soc_figure(jan_slice, 'Combined Heat Dispatch & TES SoC: 13-26 January 2025')
+        create_combined_dispatch_soc_figure(aug_slice, 'Combined Heat Dispatch & TES SoC: 4-17 August 2025')
+
     # --- NEW: WRITE OPTIMAL CAPACITIES TO JSON FOR STAGE 2 ---
     stage1_results = {
         "BiomassBoiler": all_techs['BiomassBoiler'].P_cap.X if config.TECH_SWITCHES.get('BiomassBoiler') else 0.0,

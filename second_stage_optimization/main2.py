@@ -373,6 +373,49 @@ if model.Status == GRB.OPTIMAL:
         plt.tight_layout()
         plt.show(block=False)
 
+        # =========================================================================
+        # --- NEW ADDITION: FIGURE 4: COMBINED THERMAL HEATING DISPATCH & TES SOC ---
+        # =========================================================================
+        # Renders the single-frame dual-axis visual matrix matching the Stage 1 layout
+        fig, ax1 = plt.subplots(figsize=(13, 6))
+
+        # Stack up positive generation components + storage discharge
+        ax1.stackplot(hour_range, v_boiler_mw, v_chp_mw, v_lshp_da_mw, v_lshp_bal_mw, disch_vals_mw,
+                      labels=['Biomass Boiler', 'CHP', 'Heat Pump (Day-Ahead)', 'Heat Pump (Balancing Down)',
+                              'TES Discharging (+)'],
+                      colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6', '#f1c40f'], alpha=0.8)
+
+        # Plot negative storage charge parameters underneath the baseline
+        ax1.fill_between(hour_range, 0, charge_vals_mw, label='TES Charging (-)', color='#2c3e50', alpha=0.85)
+
+        # Display the primary distribution town heating demand threshold line
+        ax1.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
+
+        # Left-axis formatting markers
+        ax1.axhline(0, color='black', linewidth=1.2)
+        ax1.set_xlabel('Time Horizon (Hours of the Year)', fontsize=11)
+        ax1.set_ylabel('Thermal Power Flow (MW)', fontsize=11)
+        ax1.set_title(f'Combined District Heating Dispatch & TES SoC — {period_label} [Scenario: {target_scenario}]',
+                      fontsize=12, fontweight='bold', pad=12)
+        ax1.set_xlim(start_t / 4, end_t / 4)
+        ax1.grid(axis='y', linestyle=':', alpha=0.5)
+
+        # Build secondary axis sharing the exact same time layout grid parameters
+        ax2 = ax1.twinx()
+        ax2.plot(hour_range, soc_percent_vals, color='#8e44ad', linewidth=2.5, label='TES State of Charge')
+        ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=11)
+        ax2.set_ylim(-5, 105)
+        ax2.tick_params(axis='y', labelcolor='#8e44ad')
+
+        # Unify active legend blocks elegantly without plotting overlap
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper right', frameon=True, facecolor='white',
+                   framealpha=0.95)
+
+        plt.tight_layout()
+        plt.show(block=False)
+
     print("\nAll interactive loops compiled. Close all active figures to exit the Python thread process completely.")
     plt.show(block=True)
 
