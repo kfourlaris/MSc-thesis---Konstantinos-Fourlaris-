@@ -203,7 +203,7 @@ REGIONAL_LCA_DATA = {
     "Amsterdam": {
         "raw_em_elec_kg_kwh": 0.427,    # market for electricity high voltage NL (kg CO2-Eq / KWh)
         "raw_em_gas_kg_m3": 0.451,      # market for natural gas high pressure NL TRANSPORTATION ONLY (kg CO2-Eq / m³)
-        "raw_em_biomass_kg_kg": 0.0438  # market for wood chips (kg CO2-Eq / kg)
+        "raw_em_biomass_kg_kg": 0.0438  # market for wood chips NL (kg CO2-Eq / kg)
     }
 }
 
@@ -232,10 +232,10 @@ EM_ELEC_Ton_KWH = _raw_elec / 1000
 
 # Natural Gas:
 EM_GAS_Ton_KWH = ((_raw_gas / GAS_LHV_KWH_M3) / 1000) + (GAS_BURNING_KG_PER_KWH / 1000)
-
+print(EM_GAS_Ton_KWH * 1000)
 # Biomass:
 EM_BIOMASS_Ton_KWH = (_raw_biomass / BIOMASS_LHV_KWH_KG) / 1000
-
+print(EM_BIOMASS_Ton_KWH * 1000)
 
 # 5. EMBEDDED INFRASTRUCTURE EMISSIONS (Common across locations)
 # -------------------------------------------------------------------------

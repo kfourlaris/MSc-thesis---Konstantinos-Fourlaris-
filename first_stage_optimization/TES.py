@@ -2,7 +2,7 @@ from gurobipy import GRB
 
 
 class PitThermalEnergyStorage:
-    def __init__(self, name, e_min_market=50, e_max_market=2788800,
+    def __init__(self, name, e_min_market=50, e_max_market=2779200,
                  capex_per_kwh=8, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
         """
         Args:
