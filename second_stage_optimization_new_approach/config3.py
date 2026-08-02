@@ -261,7 +261,7 @@ for s in SCENARIOS:
 
 
 # =========================================================================
-# --- LIFE CYCLE ASSESSMENT (LCA) RAW EMISSION FACTORS & CONVERSIONS ---
+# --- LIFE CYCLE ASSESSMENT (LCA) RAW EMISSION FACTORS & CONVERSIONS ECOINVENT DATABASE---
 # =========================================================================
 
 # 1. OPERATIONAL EMISSIONS
@@ -312,15 +312,19 @@ EM_BIOMASS_Ton_KWH = (_raw_biomass / BIOMASS_LHV_KWH_KG) / 1000
 
 # 5. EMBEDDED INFRASTRUCTURE EMISSIONS (Common across locations)
 # -------------------------------------------------------------------------
-# EcoInvent metrics converted to Tons CO2-Eq per KW
-_EM_BOILER_PLANT_TON_KW = (55.8 / 1000) / LIFESPAN  # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
-_EM_CHP_PLANT_TON_KW = (54.4 / 1000) / LIFESPAN     # heat and power co-generation unit construction, 1MW electrical, components for heat only_Europe -> 5.44 * 10^4 kg co2 per 1000 KW
-_EM_TES_TON_M3 = (0.587 / 1000) / LIFESPAN          # excavation, hydraulic digger -> 0.587 kg co2 per m^3
-_EM_HP_TON_KG = 2.53 / 1000                         # market for industrial machine heavy unspecified -> 2.53 kg co2 per kg of machinery
+# EcoInvent original search sting results
+ORIGINAL_BB_EMISSIONS = 2.79e5       # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
+ORIGINAL_KW_BB = 5000                # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
+ORIGINAL_CHP_EMISSIONS = 5.44e4      # heat and power co-generation unit construction, 1MW electrical, components for heat only_Europe -> 5.44 * 10^4 kg co2 per 1000 KW
+ORIGINAL_KW_CHP = 1000               # heat and power co-generation unit construction, 1MW electrical, components for heat only_Europe -> 5.44 * 10^4 kg co2 per 1000 KW
+ORIGINAL_HP_EMISSIONS = 5.04e3       # market for heat pump, 30 KW -> 5.04 * 10^3 kg co2 per 30 KW
+ORIGINAL_KW_HP = 30                  # market for heat pump, 30 KW -> 5.04 * 10^3 kg co2 per 30 KW
 
-# HP and Chiller kilos to KW according to MAN brochure (50000 KW equal to 20000 kg):
-KG_PER_KW_MACHINERY = 0.4 # 1 KG OF MACHINERY EQUAL TO 0.4 KW of power
-_EM_HP_TON_KW = (_EM_HP_TON_KG * KG_PER_KW_MACHINERY) / LIFESPAN
+# EcoInvent metrics converted to Tons CO2-Eq per KW
+_EM_BOILER_PLANT_TON_KW = ((ORIGINAL_BB_EMISSIONS/ORIGINAL_KW_BB) / 1000) / LIFESPAN
+_EM_CHP_PLANT_TON_KW = ((ORIGINAL_CHP_EMISSIONS/ORIGINAL_KW_CHP) / 1000) / LIFESPAN
+_EM_HP_TON_KW = ((ORIGINAL_HP_EMISSIONS/ORIGINAL_KW_HP) / 1000) / LIFESPAN
+_EM_TES_TON_M3 = (0.587 / 1000) / LIFESPAN    # excavation, hydraulic digger -> 0.587 kg co2 per m^3
 
 # 6. EXPORT PACK
 # -------------------------------------------------------------------------
