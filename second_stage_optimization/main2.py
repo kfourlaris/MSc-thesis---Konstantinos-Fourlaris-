@@ -193,6 +193,35 @@ if model.Status == GRB.OPTIMAL:
     print("=" * 55 + "\n")
 
     # =========================================================================
+    # --- NEW: GRID FLEXIBILITY ANALYSIS (EXPECTED MWh OFFERED) ---
+    # =========================================================================
+    print("=" * 65)
+    print("        GRID FLEXIBILITY ANALYSIS: EXPECTED ANNUAL MWh OFFERED")
+    print("=" * 65)
+
+    expected_up_flex_mwh = 0.0
+    expected_down_flex_mwh = 0.0
+
+    for s in config2.SCENARIOS:
+        prob = config2.PROBABILITY[s]
+
+        # Sum kW across all 15-minute intervals for scenario s
+        sum_bal_up_kw = sum(lshp.V_balancing_up[t, s].X for t in timesteps_15min)
+        sum_bal_dn_kw = sum(lshp.V_balancing_down[t, s].X for t in timesteps_15min)
+
+        # Convert: kW * 0.25h / 1000 = MWh, weighted by scenario probability
+        expected_up_flex_mwh += prob * (sum_bal_up_kw * 0.25 / 1000)
+        expected_down_flex_mwh += prob * (sum_bal_dn_kw * 0.25 / 1000)
+
+    total_expected_flex_mwh = expected_up_flex_mwh + expected_down_flex_mwh
+
+    print(f"Expected Upward Flexibility (Consuming Less):    {expected_up_flex_mwh:15,.2f} MWh/year")
+    print(f"Expected Downward Flexibility (Consuming More):  {expected_down_flex_mwh:15,.2f} MWh/year")
+    print("-" * 65)
+    print(f"TOTAL EXPECTED ANNUAL FLEXIBILITY OFFERED:       {total_expected_flex_mwh:15,.2f} MWh/year")
+    print("=" * 65 + "\n")
+
+    # =========================================================================
     # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---
     # =========================================================================
     target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
@@ -285,8 +314,8 @@ if model.Status == GRB.OPTIMAL:
 
     # Define the two distinct 1-week evaluation horizons (start_t, end_t, label)
     validation_periods = [
-        (1152, 2496, "Winter Week (Jan)"),
-        (20640, 21984, "Summer Week (Jul)")
+        (1152, 2496, "13-26 January 2025"),
+        (20640, 21984, "4-17 August 2025")
     ]
 
     print(f"\n" + "=" * 60)
@@ -312,6 +341,10 @@ if model.Status == GRB.OPTIMAL:
         cooling_demand_mw = [config2.COOLING_DEMAND_15MIN[t] / 0.25 / 1000 for t in week_timesteps]
 
         charge_vals_mw = [-tes.U_charge[t, target_scenario].X / 1000 for t in week_timesteps]
+        #charge_vals_mw = [
+            #-(tes.U_charge[t, target_scenario].X + lshp.V_heat_bal_down[t, target_scenario].X) / 1000
+            #for t in week_timesteps
+        #]
         disch_vals_mw = [tes.V_disch[t, target_scenario].X / 1000 for t in week_timesteps]
         tes_capacity_mwh = tes.E_cap / 1000
         soc_percent_vals = [(tes.E_state[t, target_scenario].X / 1000 / tes_capacity_mwh) * 100 for t in week_timesteps]
@@ -393,9 +426,9 @@ if model.Status == GRB.OPTIMAL:
 
         # Left-axis formatting markers
         ax1.axhline(0, color='black', linewidth=1.2)
-        ax1.set_xlabel('Time Horizon (Hours of the Year)', fontsize=11)
-        ax1.set_ylabel('Thermal Power Flow (MW)', fontsize=11)
-        ax1.set_title(f'Combined District Heating Dispatch & TES SoC — {period_label} [Scenario: {target_scenario}]',
+        ax1.set_xlabel('Hour of the Year', fontsize=11)
+        ax1.set_ylabel('Power Flow (MW)', fontsize=11)
+        ax1.set_title(f'Combined Heat Dispatch & TES SoC — {period_label} [Scenario: {target_scenario}]',
                       fontsize=12, fontweight='bold', pad=12)
         ax1.set_xlim(start_t / 4, end_t / 4)
         ax1.grid(axis='y', linestyle=':', alpha=0.5)

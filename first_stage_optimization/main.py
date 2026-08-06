@@ -323,8 +323,8 @@ if model.Status == GRB.OPTIMAL:
             plt.show()
 
 
-        create_cool_dispatch_figure(t_plot, 'Cool Dispatch: Full Year')
-        create_cool_dispatch_figure(aug_slice, 'Cool Dispatch: August Zoom')
+        create_cool_dispatch_figure(t_plot, 'Cooling Dispatch: Full Year')
+        create_cool_dispatch_figure(aug_slice, 'Cooling Dispatch: 4-17 August 2025')
 
     if tes_enabled and lshp_enabled:
         tes_capacity_mwh = tes.E_cap.X / 1000

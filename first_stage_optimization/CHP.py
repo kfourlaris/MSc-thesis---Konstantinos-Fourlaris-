@@ -18,7 +18,7 @@ class CHP:
         self.p_min = p_min_market
         self.p_max = p_max_market
         self.delta = min_load_fraction
-        self.capex_per_kw = capex_per_kw_el #3000 EUR/KW
+        self.capex_per_kw = capex_per_kw_el #1400 EUR/KW
         self.opex_per_kw = opex_per_kw_el   #60 EUR/KW
 
         # Placeholders for Variables (Matching what is defined in my proposal)
