@@ -23,7 +23,7 @@ print(f"Average cooling COP: {sum(config3.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization_new_approach")
-model.setParam('MIPGap', 0.01)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.03)  # Maintain identical performance gap target
 model.Params.TimeLimit = 7200.0
 # Force Gurobi to use the deterministic Barrier Method (skips concurrent wait)
 model.setParam('Method', 3)
@@ -40,10 +40,10 @@ tes = PitThermalEnergyStorage15Min2("TES")
 # --- STEP 3: INITIALIZE FIXED DAY-AHEAD PLAN VARIABLES ONCE (FIRST STAGE) ---
 # =========================================================================
 chp.add_variables(model, timesteps_15min)
-chp.add_constraints(model, timesteps_15min)
+chp.add_constraints(model, timesteps_15min, heat_demand_15min=config3.HEAT_DEMAND_15MIN)
 
 boiler.add_variables(model, timesteps_15min)
-boiler.add_constraints(model, timesteps_15min)
+boiler.add_constraints(model, timesteps_15min, heat_demand_15min=config3.HEAT_DEMAND_15MIN)
 
 lshp.add_variables(model, timesteps_15min)
 
@@ -79,6 +79,7 @@ for s in config3.SCENARIOS:
         (boiler.V_heat[t] * 0.25 +       # <--- Corrected: Independent of scenario
          chp.V_heat[t] * 0.25 +          # <--- Corrected: Independent of scenario
          lshp.V_heat_DA[t] * 0.25 +      # <--- Corrected: Independent of scenario
+         lshp.V_heat_bal_down[t,s] * 0.25 +
          (tes.V_disch[t, s] - tes.U_charge[t, s]) * 0.25 == config3.HEAT_DEMAND_15MIN[t]
          for t in timesteps_15min),
         name=f"Global_Heat_Demand_Balance_{s}"
@@ -161,6 +162,35 @@ if model.Status == GRB.OPTIMAL:
     print(f" -> Expected Multi-Scenario Baseline Cost:     {calculated_baseline_cost:15,.2f} Euro")
     print(f" -> Balancing Participation Net Opex:          {net_balancing_opex:15,.2f} Euro")
     print("=" * 65)
+
+    # =========================================================================
+    # --- NEW: GRID FLEXIBILITY ANALYSIS (EXPECTED MWh OFFERED) ---
+    # =========================================================================
+    print("=" * 65)
+    print("        GRID FLEXIBILITY ANALYSIS: EXPECTED ANNUAL MWh OFFERED")
+    print("=" * 65)
+
+    expected_up_flex_mwh = 0.0
+    expected_down_flex_mwh = 0.0
+
+    for s in config3.SCENARIOS:
+        prob = config3.PROBABILITY[s]
+
+        # Sum kW across all 15-minute intervals for scenario s
+        sum_bal_up_kw = sum(lshp.V_balancing_up[t, s].X for t in timesteps_15min)
+        sum_bal_dn_kw = sum(lshp.V_balancing_down[t, s].X for t in timesteps_15min)
+
+        # Convert: kW * 0.25h / 1000 = MWh, weighted by scenario probability
+        expected_up_flex_mwh += prob * (sum_bal_up_kw * 0.25 / 1000)
+        expected_down_flex_mwh += prob * (sum_bal_dn_kw * 0.25 / 1000)
+
+    total_expected_flex_mwh = expected_up_flex_mwh + expected_down_flex_mwh
+
+    print(f"Expected Upward Flexibility (Consuming Less):    {expected_up_flex_mwh:15,.2f} MWh/year")
+    print(f"Expected Downward Flexibility (Consuming More):  {expected_down_flex_mwh:15,.2f} MWh/year")
+    print("-" * 65)
+    print(f"TOTAL EXPECTED ANNUAL FLEXIBILITY OFFERED:       {total_expected_flex_mwh:15,.2f} MWh/year")
+    print("=" * 65 + "\n")
 
     # =========================================================================
     # --- STEP 7: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---
@@ -253,8 +283,8 @@ if model.Status == GRB.OPTIMAL:
 
     # Define the two distinct 1-week evaluation horizons
     validation_periods = [
-        (1152, 2496, "Winter Week (Jan)"),
-        (20640, 21984, "Summer Week (Jul)")
+        (1152, 2496, "13-26 January 2025"),
+        (20640, 21984, "4-17 August 2025")
     ]
 
     print(f"\n" + "=" * 60)
@@ -341,6 +371,49 @@ if model.Status == GRB.OPTIMAL:
         plt.tight_layout()
         plt.show(block=False)
 
+        # =========================================================================
+        # --- NEW ADDITION: FIGURE 4: COMBINED THERMAL HEATING DISPATCH & TES SOC ---
+        # =========================================================================
+        # Renders the single-frame dual-axis visual matrix matching the Stage 1 layout
+        fig, ax1 = plt.subplots(figsize=(13, 6))
+
+        # Stack up positive generation components + storage discharge
+        ax1.stackplot(hour_range, v_boiler_mw, v_chp_mw, v_lshp_da_mw, v_lshp_bal_mw, disch_vals_mw,
+                      labels=['Biomass Boiler', 'CHP', 'Heat Pump (Day-Ahead)', 'Heat Pump (Balancing Down)',
+                              'TES Discharging (+)'],
+                      colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6', '#f1c40f'], alpha=0.8)
+
+        # Plot negative storage charge parameters underneath the baseline
+        ax1.fill_between(hour_range, 0, charge_vals_mw, label='TES Charging (-)', color='#2c3e50', alpha=0.85)
+
+        # Display the primary distribution town heating demand threshold line
+        ax1.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
+
+        # Left-axis formatting markers
+        ax1.axhline(0, color='black', linewidth=1.2)
+        ax1.set_xlabel('Hour of the Year', fontsize=11)
+        ax1.set_ylabel('Power Flow (MW)', fontsize=11)
+        ax1.set_title(f'Combined Heat Dispatch & TES SoC — {period_label} [Scenario: {target_scenario}]',
+                      fontsize=12, fontweight='bold', pad=12)
+        ax1.set_xlim(start_t / 4, end_t / 4)
+        ax1.grid(axis='y', linestyle=':', alpha=0.5)
+
+        # Build secondary axis sharing the exact same time layout grid parameters
+        ax2 = ax1.twinx()
+        ax2.plot(hour_range, soc_percent_vals, color='#8e44ad', linewidth=2.5, label='TES State of Charge')
+        ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=11)
+        ax2.set_ylim(-5, 105)
+        ax2.tick_params(axis='y', labelcolor='#8e44ad')
+
+        # Unify active legend blocks elegantly without plotting overlap
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper right', frameon=True, facecolor='white',
+                   framealpha=0.95)
+
+        plt.tight_layout()
+        plt.show(block=False)
+
     print("\nAll interactive loops compiled. Close all active figures to exit the Python thread process completely.")
     plt.show(block=True)
 
@@ -351,71 +424,130 @@ if model.Status == GRB.OPTIMAL:
     print("      ENVIRONMENTAL PERFORMANCE ANALYSIS (Stochastic Expected Values)")
     print("=" * 65)
 
-    expected_op_emissions_elec = 0.0
-    expected_op_emissions_gas = 0.0
-    expected_op_emissions_biomass = 0.0
+    # 1. PROCESS BASELINE OPERATIONAL FLOWS (Scenario-Independent / First Stage)
+    # Pre-sum baseline consumption across all 35,040 timesteps (kW * 0.25h = kWh)
+    total_baseline_elec_kwh = sum(lshp.U_elec[t].X * 0.25 for t in timesteps_15min)
+    total_gas_kwh = sum(chp.U_gas[t].X * 0.25 for t in timesteps_15min)
+    total_biomass_kwh = sum(boiler.U_biomass[t].X * 0.25 for t in timesteps_15min)
 
-    # 1. PROCESS STOCHASTIC QUARTER-HOUR OPERATIONAL FLOWS
+    # Convert baseline kWh to metric tons of CO2-Eq (Factor units: tCO2-Eq/kWh or tCO2-Eq/MWh adjusted)
+    base_op_emissions_gas = (
+            total_gas_kwh * config3.TON_CO2_EMISSION_FACTORS["gas"]
+    )
+    base_op_emissions_biomass = (
+            total_biomass_kwh * config3.TON_CO2_EMISSION_FACTORS["biomass"]
+    )
+
+    # 2. PROCESS STOCHASTIC ELECTRICITY ADJUSTMENTS (Scenario-Dependent / Second Stage)
+    expected_op_emissions_elec = 0.0
+
     for s in config3.SCENARIOS:
         prob = config3.PROBABILITY[s]
 
-        # Calculate real-time physical electricity grid draw across all timesteps for scenario 's'
-        scenario_u_elec_kw = 0.0
+        # Compute net real-time electricity consumption for scenario 's'
+        # Net Elec = Baseline Electricity + Balancing Down (Consuming More) - Balancing Up (Consuming Less)
+        scenario_net_elec_kwh = 0.0
         for t in timesteps_15min:
-            # Captures the true physical real-time import (Baseline + Bal_Down - Bal_Up)
-            net_elec_t = lshp.U_elec[t, s].X + lshp.V_balancing_down[t, s].X - lshp.V_balancing_up[t, s].X
-            scenario_u_elec_kw += net_elec_t
+            net_elec_t_kw = (
+                    lshp.U_elec[t].X
+                    + lshp.V_balancing_down[t, s].X
+                    - lshp.V_balancing_up[t, s].X
+            )
+            scenario_net_elec_kwh += net_elec_t_kw * 0.25
 
-        scenario_u_gas_kw = sum(chp.U_gas[t, s].X for t in timesteps_15min)
-        scenario_u_biomass_kw = sum(boiler.U_biomass[t, s].X for t in timesteps_15min)
-
-        # Convert kW power flow levels into integrated energy vectors (0.25h) * Emission Factor * Probability
+        # Probability-weighted expected operational electricity emissions
         expected_op_emissions_elec += prob * (
-                scenario_u_elec_kw * 0.25 * config3.TON_CO2_EMISSION_FACTORS["electricity"])
-        expected_op_emissions_gas += prob * (scenario_u_gas_kw * 0.25 * config3.TON_CO2_EMISSION_FACTORS["gas"])
-        expected_op_emissions_biomass += prob * (
-                scenario_u_biomass_kw * 0.25 * config3.TON_CO2_EMISSION_FACTORS["biomass"])
+                scenario_net_elec_kwh * config3.TON_CO2_EMISSION_FACTORS["electricity"]
+        )
 
-    total_expected_operational_emissions = expected_op_emissions_elec + expected_op_emissions_gas + expected_op_emissions_biomass
+    expected_op_emissions_gas = base_op_emissions_gas
+    expected_op_emissions_biomass = base_op_emissions_biomass
 
-    # 2. PROCESS LOCKED HARDWARE INFRASTRUCTURE OVERHEAD
-    # Now explicitly referencing the global config2 module dictionary setup
-    emb_emissions_boiler = config3.INSTALLED_TECH["BiomassBoiler"]["P_cap"] * config3.TON_CO2_EMISSION_FACTORS[
-        "biomass_embedded"]
-    emb_emissions_chp = config3.INSTALLED_TECH["CHP"]["P_cap"] * config3.TON_CO2_EMISSION_FACTORS["chp_embedded"]
-    emb_emissions_lshp = config3.INSTALLED_TECH["LargeScaleHeatPump"]["P_cap"] * config3.TON_CO2_EMISSION_FACTORS[
-        "lshp_embedded"]
+    total_expected_operational_emissions = (
+            expected_op_emissions_elec
+            + expected_op_emissions_gas
+            + expected_op_emissions_biomass
+    )
 
-    # Calculate required volume metric based on the optimized energy capacity parameter
+    # 3. PROCESS ANNUALIZED HARDWARE INFRASTRUCTURE OVERHEAD (Divided by Lifetime n = 20 Years)
+    lifetime_years = getattr(config3, "LIFETIME_YEARS", 20)
+
+    emb_emissions_boiler = (
+                                   config3.INSTALLED_TECH["BiomassBoiler"]["P_cap"]
+                                   * config3.TON_CO2_EMISSION_FACTORS["biomass_embedded"]
+                           ) / lifetime_years
+
+    emb_emissions_chp = (
+                                config3.INSTALLED_TECH["CHP"]["P_cap"]
+                                * config3.TON_CO2_EMISSION_FACTORS["chp_embedded"]
+                        ) / lifetime_years
+
+    emb_emissions_lshp = (
+                                 config3.INSTALLED_TECH["LargeScaleHeatPump"]["P_cap"]
+                                 * config3.TON_CO2_EMISSION_FACTORS["lshp_embedded"]
+                         ) / lifetime_years
+
+    # Calculate Pit TES volume (m3) and annualize embedded footprint
     delta_t = config3.T_SINK - config3.T_RETURN
     tes_energy_kwh = config3.INSTALLED_TECH["TES"]["E_cap"]
     tes_volume_m3_fixed = tes_energy_kwh / (1.162 * delta_t)
-    emb_emissions_tes = tes_volume_m3_fixed * config3.TON_CO2_EMISSION_FACTORS["tes_embedded"]
 
-    total_embedded_emissions = emb_emissions_boiler + emb_emissions_chp + emb_emissions_lshp + emb_emissions_tes
+    emb_emissions_tes = (
+                                tes_volume_m3_fixed * config3.TON_CO2_EMISSION_FACTORS["tes_embedded"]
+                        ) / lifetime_years
 
-    # 3. CONSOLE STOCHASTIC CARBON EMISSIONS OVERVIEW REPORT GENERATION
+    total_embedded_emissions = (
+            emb_emissions_boiler
+            + emb_emissions_chp
+            + emb_emissions_lshp
+            + emb_emissions_tes
+    )
+
+    # 4. CONSOLE STOCHASTIC CARBON EMISSIONS OVERVIEW REPORT GENERATION
     print("A. PROBABILITY-WEIGHTED ANNUAL OPERATION RUNTIME:")
-    print(f" -> Expected Grid Electricity Consumption Footprint:  {expected_op_emissions_elec:15,.2f} Tons CO2-Eq/year")
     print(
-        f" -> Expected Natural Gas Supply Chain Combustion Footprint:    {expected_op_emissions_gas:15,.2f} Tons CO2-Eq/year")
+        " -> Expected Grid Electricity Consumption Footprint: "
+        f" {expected_op_emissions_elec:15,.2f} Tons CO2-Eq/year"
+    )
     print(
-        f" -> Expected Biomass Fuel Supply Chain Combustion Footprint:     {expected_op_emissions_biomass:15,.2f} Tons CO2-Eq/year")
+        " -> Expected Natural Gas Supply Chain Combustion Footprint:   "
+        f" {expected_op_emissions_gas:15,.2f} Tons CO2-Eq/year"
+    )
     print(
-        f" SUB-TOTAL EXPECTED RUNTIME EMISSIONS:       {total_expected_operational_emissions:15,.2f} Tons CO2-Eq/year\n")
+        " -> Expected Biomass Fuel Supply Chain Combustion Footprint:  "
+        f" {expected_op_emissions_biomass:15,.2f} Tons CO2-Eq/year"
+    )
+    print(
+        " SUB-TOTAL EXPECTED RUNTIME EMISSIONS:                      "
+        f" {total_expected_operational_emissions:15,.2f} Tons CO2-Eq/year\n"
+    )
 
     print("B. ANNUALIZED EMBEDDED INFRASTRUCTURE SYSTEM EMISSIONS:")
-    print(f" -> Biomass Boiler Plant:      {emb_emissions_boiler:15,.2f} Tons CO2-Eq/year")
-    print(f" -> CHP Facility:       {emb_emissions_chp:15,.2f} Tons CO2-Eq/year")
-    print(f" -> Large-Scale Heat Pump:   {emb_emissions_lshp:15,.2f} Tons CO2-Eq/year")
-    print(f" -> Excavated Pit Thermal Storage:    {emb_emissions_tes:15,.2f} Tons CO2-Eq/year")
-    print(f" SUB-TOTAL INFRASTRUCTURE EMISSIONS:         {total_embedded_emissions:15,.2f} Tons CO2-Eq/year\n")
+    print(
+        " -> Biomass Boiler Plant:     "
+        f" {emb_emissions_boiler:15,.2f} Tons CO2-Eq/year"
+    )
+    print(
+        f" -> CHP Facility:      {emb_emissions_chp:15,.2f} Tons CO2-Eq/year"
+    )
+    print(
+        f" -> Large-Scale Heat Pump:  {emb_emissions_lshp:15,.2f} Tons CO2-Eq/year"
+    )
+    print(
+        " -> Excavated Pit Thermal Storage:   "
+        f" {emb_emissions_tes:15,.2f} Tons CO2-Eq/year"
+    )
+    print(
+        " SUB-TOTAL INFRASTRUCTURE EMISSIONS:        "
+        f" {total_embedded_emissions:15,.2f} Tons CO2-Eq/year\n"
+    )
 
     print("-" * 65)
-    global_experiment_emissions_stochastic = total_expected_operational_emissions + total_embedded_emissions
+    global_experiment_emissions_stochastic = (
+            total_expected_operational_emissions + total_embedded_emissions
+    )
     print(
-        f"STOCHASTIC EXPECTED SYSTEM LIFE TOTAL FOOTPRINT: {global_experiment_emissions_stochastic:12,.2f} Tons CO2-Eq/year")
+        "STOCHASTIC EXPECTED SYSTEM LIFE TOTAL FOOTPRINT:"
+        f" {global_experiment_emissions_stochastic:12,.2f} Tons CO2-Eq/year"
+    )
     print("=" * 65 + "\n")
-
-else:
-    print("Optimization terminated with status code:", model.Status)

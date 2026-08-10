@@ -74,6 +74,13 @@ class PitThermalEnergyStorage15Min2:
                 name=f"charge_source_gate_{self.name}_t{t}_{scenario}"
             )
 
+            # --- New Enforced Lower Bound Constraint ---
+            # Ensures all heat generated during downward balancing MUST enter the TES
+            model.addConstr(
+                self.U_charge[t, scenario] >= hp_15min_instance.V_heat_bal_down[t, scenario],
+                name=f"charge_min_bal_down_{self.name}_t{t}_{scenario}"
+            )
+
             # Simultaneous operation binary lockout protection
             model.addConstr(
                 self.U_charge[t, scenario] <= hp_max_thermal_capacity * self.C_tech[t, scenario],

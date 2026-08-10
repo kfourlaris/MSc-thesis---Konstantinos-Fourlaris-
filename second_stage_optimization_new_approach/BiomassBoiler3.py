@@ -42,7 +42,7 @@ class BiomassBoiler15Min2:
                 name=f"U_B_{self.name}_t{t}"
             )
 
-    def add_constraints(self, model, timesteps_15min):
+    def add_constraints(self, model, timesteps_15min, heat_demand_15min):
         """
         Enforces structural baseline constraints invariant to scenarios.
         """
@@ -63,4 +63,11 @@ class BiomassBoiler15Min2:
             model.addConstr(
                 self.V_heat[t] >= self.delta * self.P_cap * self.y_on[t],
                 name=f"low_bound_fixed_P_{self.name}_t{t}"
+            )
+
+            # 4. Last CONSTRAINT: CAP BIOMASS HEAT PRODUCTION TO TOWN DEMAND
+            demand_kw = heat_demand_15min[t] / 0.25
+            model.addConstr(
+                self.V_heat[t] <= demand_kw,
+                name=f"chp_heat_bb_demand_{self.name}_t{t}",
             )

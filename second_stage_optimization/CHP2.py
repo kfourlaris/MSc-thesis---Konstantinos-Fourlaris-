@@ -1,5 +1,7 @@
 from gurobipy import GRB
 import config2
+from second_stage_optimization.config2 import HEAT_DEMAND_15MIN
+
 
 class CHP15Min:
     def __init__(self, name, efficiency_el=0.35, efficiency_th=0.65, min_load_fraction=0.15):
@@ -56,7 +58,7 @@ class CHP15Min:
                 name=f"U_G_{self.name}_t{t}_{scenario}"
             )
 
-    def add_constraints(self, model, timesteps_15min, scenario):
+    def add_constraints(self, model, timesteps_15min, heat_demand_15min, scenario):
         """
         Enforces 15-minute constraints like in the first stage optimization.
         """
@@ -81,4 +83,11 @@ class CHP15Min:
             model.addConstr(
                 self.V_heat[t, scenario] >= self.delta * self.P_cap * self.y_on[t, scenario],
                 name=f"low_bound_fixed_P_{self.name}_t{t}_{scenario}"
+            )
+
+            # 4. Last CONSTRAINT: CAP CHP HEAT PRODUCTION TO TOWN DEMAND
+            demand_kw = heat_demand_15min[t] / 0.25
+            model.addConstr(
+                self.V_heat[t, scenario] <= demand_kw,
+                name=f"chp_heat_cap_demand_{self.name}_t{t}_{scenario}",
             )

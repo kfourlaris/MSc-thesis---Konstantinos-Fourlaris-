@@ -42,7 +42,7 @@ class BiomassBoiler15Min:
                 name=f"U_B_{self.name}_t{t}_{scenario}"
             )
 
-    def add_constraints(self, model, timesteps_15min, scenario):
+    def add_constraints(self, model, timesteps_15min, heat_demand_15min, scenario):
         """
         Enforces 15-minute constraints like in the first stage optimization
         """
@@ -63,4 +63,10 @@ class BiomassBoiler15Min:
             model.addConstr(
                 self.V_heat[t, scenario] >= self.delta * self.P_cap * self.y_on[t, scenario],
                 name=f"low_bound_fixed_P_{self.name}_t{t}_{scenario}"
+            )
+            # 4. Last CONSTRAINT: CAP BIOMASS HEAT PRODUCTION TO TOWN DEMAND
+            demand_kw = heat_demand_15min[t] / 0.25
+            model.addConstr(
+                self.V_heat[t, scenario] <= demand_kw,
+                name=f"chp_heat_bb_demand_{self.name}_t{t}_{scenario}",
             )

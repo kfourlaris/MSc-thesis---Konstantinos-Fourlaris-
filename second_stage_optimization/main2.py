@@ -44,8 +44,8 @@ for s in config2.SCENARIOS:
     tes.add_variables(model, timesteps_15min, scenario=s)
 
     # 2. Enforce physical technology performance constraints
-    boiler.add_constraints(model, timesteps_15min, scenario=s)
-    chp.add_constraints(model, timesteps_15min, scenario=s)
+    boiler.add_constraints(model, timesteps_15min, heat_demand_15min=config2.HEAT_DEMAND_15MIN, scenario=s)
+    chp.add_constraints(model, timesteps_15min, heat_demand_15min=config2.HEAT_DEMAND_15MIN, scenario=s)
     lshp.add_constraints(
         model,
         timesteps_15min,
@@ -69,6 +69,7 @@ for s in config2.SCENARIOS:
         (boiler.V_heat[t, s] * 0.25 +
          chp.V_heat[t, s] * 0.25 +
          lshp.V_heat_DA[t, s] * 0.25 +  # <--- ONLY Day-Ahead generated heat allowed here!
+         lshp.V_heat_bal_down[t, s] * 0.25 +
          (tes.V_disch[t, s] - tes.U_charge[t, s]) * 0.25 == config2.HEAT_DEMAND_15MIN[t]
          for t in timesteps_15min),
         name=f"Global_Heat_Demand_Balance_{s}"
@@ -341,10 +342,6 @@ if model.Status == GRB.OPTIMAL:
         cooling_demand_mw = [config2.COOLING_DEMAND_15MIN[t] / 0.25 / 1000 for t in week_timesteps]
 
         charge_vals_mw = [-tes.U_charge[t, target_scenario].X / 1000 for t in week_timesteps]
-        #charge_vals_mw = [
-            #-(tes.U_charge[t, target_scenario].X + lshp.V_heat_bal_down[t, target_scenario].X) / 1000
-            #for t in week_timesteps
-        #]
         disch_vals_mw = [tes.V_disch[t, target_scenario].X / 1000 for t in week_timesteps]
         tes_capacity_mwh = tes.E_cap / 1000
         soc_percent_vals = [(tes.E_state[t, target_scenario].X / 1000 / tes_capacity_mwh) * 100 for t in week_timesteps]
