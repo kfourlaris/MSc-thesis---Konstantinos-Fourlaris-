@@ -350,9 +350,9 @@ if model.Status == GRB.OPTIMAL:
         plt.figure(figsize=(13, 5.5))
         plt.stackplot(hour_range,
                       v_boiler_mw, v_chp_mw, v_lshp_da_mw, v_lshp_bal_mw,
-                      labels=['Biomass Boiler', 'CHP', 'Heat Pump (Day-Ahead)', 'Heat Pump (Balancing Down)'],
-                      colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6'], alpha=0.8)
-        plt.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
+                      labels=['BB', 'CHP', 'HP (Day-Ahead)', 'HP (Balancing Down)'],
+                      colors=['#2ecc71', '#3498db', '#e74c3c', '#f39c12'], alpha=0.8)
+        plt.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Heat Demand')
 
         plt.title(f'District Heating Dispatch Stack — {period_label} [Scenario: {target_scenario}]', fontsize=12,
                   fontweight='bold')
@@ -411,15 +411,15 @@ if model.Status == GRB.OPTIMAL:
 
         # Stack up positive generation components + storage discharge
         ax1.stackplot(hour_range, v_boiler_mw, v_chp_mw, v_lshp_da_mw, v_lshp_bal_mw, disch_vals_mw,
-                      labels=['Biomass Boiler', 'CHP', 'Heat Pump (Day-Ahead)', 'Heat Pump (Balancing Down)',
+                      labels=['BB', 'CHP', 'HP (Day-Ahead)', 'HP (Balancing Down)',
                               'TES Discharging (+)'],
-                      colors=['#2ecc71', '#3498db', '#e74c3c', '#9b59b6', '#f1c40f'], alpha=0.8)
+                      colors=['#2ecc71', '#3498db', '#e74c3c', '#5d6d7e', '#f1c40f'], alpha=0.8)
 
         # Plot negative storage charge parameters underneath the baseline
         ax1.fill_between(hour_range, 0, charge_vals_mw, label='TES Charging (-)', color='#2c3e50', alpha=0.85)
 
         # Display the primary distribution town heating demand threshold line
-        ax1.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Town Heat Demand')
+        ax1.plot(hour_range, heat_demand_mw, color='black', linestyle='--', linewidth=2, label='Heat Demand')
 
         # Left-axis formatting markers
         ax1.axhline(0, color='black', linewidth=1.2)
