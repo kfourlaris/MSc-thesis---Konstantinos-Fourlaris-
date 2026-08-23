@@ -247,15 +247,15 @@ if model.Status == GRB.OPTIMAL:
         plt.plot([t_plot[i] for i in period], [HEAT_DEMAND_VEC[i] / 1000 for i in period],
                  color='black', linestyle='--', linewidth=2, label='Heat Demand')
         plt.title(title)
-        plt.xlabel('Hour of the Year')
-        plt.ylabel('Power (MW)')
+        plt.xlabel('Hour of the Year', fontsize=18)
+        plt.ylabel('Power Flow (MW)', fontsize=18)
         plt.legend(loc='upper right')
         plt.grid(axis='y', linestyle=':', alpha=0.6)
         plt.tight_layout()
         plt.show()
 
 
-    create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
+    #create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
     create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: 13-26 January 2025')
     create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: 4-17 August 2025')
 
@@ -277,15 +277,15 @@ if model.Status == GRB.OPTIMAL:
                              alpha=0.7)
             ax1.fill_between(p_range, [charge_vals[i] for i in period], label='Charging (-)', color='navy', alpha=0.7)
             ax1.axhline(0, color='black', linewidth=1)
-            ax1.set_ylabel('Power Flow (MW)')
-            ax1.set_title(f'TES Operation ({title_suffix})')
+            ax1.set_ylabel('Power Flow (MW)', fontsize=18)
+            #ax1.set_title(f'TES Operation ({title_suffix})')
             ax1.legend(loc='upper right')
             ax1.grid(alpha=0.3)
 
             ax2.plot(p_range, [soc_percent_vals[i] for i in period], color='green', linewidth=1.5, label='Stored Energy')
             ax2.fill_between(p_range, [soc_percent_vals[i] for i in period], color='green', alpha=0.1)
-            ax2.set_ylabel('State of Charge (%)')
-            ax2.set_xlabel('Hour of the Year')
+            ax2.set_ylabel('State of Charge (%)', fontsize=18)
+            ax2.set_xlabel('Hour of the Year', fontsize=18)
             ax2.legend(loc='upper right')
             ax2.grid(alpha=0.3)
 
@@ -293,7 +293,7 @@ if model.Status == GRB.OPTIMAL:
             plt.show()
 
 
-        create_tes_double_subplot(t_plot, 'Full Year')
+        #create_tes_double_subplot(t_plot, 'Full Year')
         create_tes_double_subplot(jan_slice, '13-26 January 2025')
         create_tes_double_subplot(aug_slice, '13-26 August 2025')
 
@@ -315,8 +315,8 @@ if model.Status == GRB.OPTIMAL:
             plt.plot([t_plot[i] for i in period], [COOLING_DEMAND_VEC[i] / 1000 for i in period],
                      color='black', linestyle='--', linewidth=2, label='Total Demand')
             plt.title(title)
-            plt.xlabel('Hour of the Year')
-            plt.ylabel('Power (MW)')
+            plt.xlabel('Hour of the Year', fontsize=18)
+            plt.ylabel('Power Flow (MW)', fontsize=18)
             plt.legend(loc='upper right')
             plt.grid(axis='y', linestyle=':', alpha=0.6)
             plt.tight_layout()
@@ -355,8 +355,8 @@ if model.Status == GRB.OPTIMAL:
 
             # Formatting Left Axis (Power)
             ax1.axhline(0, color='black', linewidth=1.2)
-            ax1.set_xlabel('Hour of the Year', fontsize=11)
-            ax1.set_ylabel('Power Flow (MW)', fontsize=11)
+            ax1.set_xlabel('Hour of the Year', fontsize=18)
+            ax1.set_ylabel('Power Flow (MW)', fontsize=18)
             ax1.set_title(title, fontsize=13, fontweight='bold', pad=15)
             ax1.grid(axis='y', linestyle=':', alpha=0.6)
 
@@ -364,7 +364,7 @@ if model.Status == GRB.OPTIMAL:
             ax2 = ax1.twinx()
             soc_mwh = [(tes.E_state[i].X / 1000) / tes_capacity_mwh * 100 for i in period]
             ax2.plot(p_range, soc_mwh, color='#8e44ad', linewidth=2.5, label='TES State of Charge')
-            ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=11)
+            ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=18)
             ax2.tick_params(axis='y', labelcolor='#8e44ad')
 
             # Combine legends from both axes into a single box

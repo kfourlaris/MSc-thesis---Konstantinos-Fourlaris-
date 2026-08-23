@@ -149,7 +149,7 @@ FUEL_PRICES = {
     "biomass": BIOMASS_PRICE,
     "gas": gas_input_prices_15min
 }
-ELEC_REVENUE = 0.10                             # Base market price for CHP sales
+ELEC_REVENUE = 0.10                             # Fixed market price for CHP sales
 
 # =============================================================================
 # 3. HIGH-RESOLUTION TIMESTEP DATA EXPANSION (8760 -> 35040)

@@ -297,8 +297,8 @@ if model.Status == GRB.OPTIMAL:
     plt.title(
         f'LSHP Electrical Dispatch Validation | Scenario {target_scenario} (Timesteps {start_t} - {end_t})',
         fontsize=13, fontweight='bold')
-    plt.xlabel('15-Minute Operational Intervals', fontsize=11)
-    plt.ylabel('Electrical Power Demand (kW)', fontsize=11)
+    plt.xlabel('15-Minute Operational Intervals', fontsize=18)
+    plt.ylabel('Electrical Power Demand (kW)', fontsize=18)
 
     plt.xlim(start_t, end_t)
     plt.grid(True, linestyle=':', alpha=0.6)
@@ -356,8 +356,8 @@ if model.Status == GRB.OPTIMAL:
 
         plt.title(f'District Heating Dispatch Stack — {period_label} [Scenario: {target_scenario}]', fontsize=12,
                   fontweight='bold')
-        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
-        plt.ylabel('Thermal Power Level (MW)', fontsize=11)
+        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=18)
+        plt.ylabel('Thermal Power Level (MW)', fontsize=18)
         plt.xlim(start_t / 4, end_t / 4)
         plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
@@ -370,15 +370,15 @@ if model.Status == GRB.OPTIMAL:
         ax1.fill_between(hour_range, disch_vals_mw, label='Storage Discharging (+)', color='orange', alpha=0.7)
         ax1.fill_between(hour_range, charge_vals_mw, label='Storage Charging (-)', color='navy', alpha=0.7)
         ax1.axhline(0, color='black', linewidth=1)
-        ax1.set_ylabel('Thermal Flow (MW)', fontsize=11)
-        ax1.set_title(f'TES Operation & State of Charge Tracking — {period_label}', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Thermal Flow (MW)', fontsize=18)
+        ax1.set_title(f'TES Operation & State of Charge Tracking — {period_label}', fontsize=18, fontweight='bold')
         ax1.legend(loc='upper right')
         ax1.grid(linestyle=':', alpha=0.5)
 
         ax2.plot(hour_range, soc_percent_vals, color='green', linewidth=1.5, label='Stored Inventory')
         ax2.fill_between(hour_range, soc_percent_vals, color='green', alpha=0.1)
-        ax2.set_ylabel('State of Charge (%)', fontsize=11)
-        ax2.set_xlabel('Time Horizon (Hours of the Year)', fontsize=11)
+        ax2.set_ylabel('State of Charge (%)', fontsize=18)
+        ax2.set_xlabel('Time Horizon (Hours of the Year)', fontsize=18)
         ax2.set_ylim(-5, 105)
         ax2.legend(loc='upper right')
         ax2.grid(linestyle=':', alpha=0.5)
@@ -395,8 +395,8 @@ if model.Status == GRB.OPTIMAL:
 
         plt.title(f'District Cooling Network Dispatch — {period_label} [Scenario: {target_scenario}]',
                   fontsize=12, fontweight='bold')
-        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=11)
-        plt.ylabel('Cooling Power Level (MW)', fontsize=11)
+        plt.xlabel('Time Horizon (Hours of the Year)', fontsize=18)
+        plt.ylabel('Cooling Power Level (MW)', fontsize=18)
         plt.xlim(start_t / 4, end_t / 4)
         plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
@@ -423,8 +423,8 @@ if model.Status == GRB.OPTIMAL:
 
         # Left-axis formatting markers
         ax1.axhline(0, color='black', linewidth=1.2)
-        ax1.set_xlabel('Hour of the Year', fontsize=11)
-        ax1.set_ylabel('Power Flow (MW)', fontsize=11)
+        ax1.set_xlabel('Hour of the Year', fontsize=18)
+        ax1.set_ylabel('Power Flow (MW)', fontsize=18)
         ax1.set_title(f'Combined Heat Dispatch & TES SoC — {period_label} [Scenario: {target_scenario}]',
                       fontsize=12, fontweight='bold', pad=12)
         ax1.set_xlim(start_t / 4, end_t / 4)
@@ -433,7 +433,7 @@ if model.Status == GRB.OPTIMAL:
         # Build secondary axis sharing the exact same time layout grid parameters
         ax2 = ax1.twinx()
         ax2.plot(hour_range, soc_percent_vals, color='#8e44ad', linewidth=2.5, label='TES State of Charge')
-        ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=11)
+        ax2.set_ylabel('TES State of Charge (%)', color='#8e44ad', fontsize=18)
         ax2.set_ylim(-5, 105)
         ax2.tick_params(axis='y', labelcolor='#8e44ad')
 
