@@ -311,7 +311,7 @@ if model.Status == GRB.OPTIMAL:
     # =========================================================================
     # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (MULTI-WEEK COMPARISON) ---
     # =========================================================================
-    target_scenario = 'S1'  # Target scenario profile to isolate
+    target_scenario = 'S1'  # Target scenario profile to isolate (2024 BM prices)
 
     # Define the two distinct 1-week evaluation horizons (start_t, end_t, label)
     validation_periods = [
