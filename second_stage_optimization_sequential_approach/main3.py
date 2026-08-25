@@ -7,10 +7,10 @@ import json
 
 # Import the new 15-minute operational modules and high-res config
 import config3
-from second_stage_optimization_new_approach.BiomassBoiler3 import BiomassBoiler15Min2
-from second_stage_optimization_new_approach.CHP3 import CHP15Min2
-from second_stage_optimization_new_approach.LSHP3 import LargeScaleHeatPump15Min2
-from second_stage_optimization_new_approach.TES3 import PitThermalEnergyStorage15Min2
+from second_stage_optimization_sequential_approach.BiomassBoiler3 import BiomassBoiler15Min2
+from second_stage_optimization_sequential_approach.CHP3 import CHP15Min2
+from second_stage_optimization_sequential_approach.LSHP3 import LargeScaleHeatPump15Min2
+from second_stage_optimization_sequential_approach.TES3 import PitThermalEnergyStorage15Min2
 
 # --- STEP 0: PRE-CHECK CONFIGURATION FLOW ---
 print(f"--- Running Stage 2 Balancing Market Optimization for: {config3.SELECTED_CITY} ---")
