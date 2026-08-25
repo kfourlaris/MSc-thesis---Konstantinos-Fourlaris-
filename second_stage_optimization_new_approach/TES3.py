@@ -17,7 +17,7 @@ class PitThermalEnergyStorage15Min2:
         # (1 - loss_rate_15min) = (1 - loss_rate_hourly)^(1/4)
         self.lam_15min = 1 - ((1 - loss_rate) ** 0.25)
 
-        # Pull technical details from your configuration dictionary
+        # Pull technical details from the config3 file
         tech_data = config3.INSTALLED_TECH["TES"]
         self.E_cap = tech_data["E_cap"]  # Fixed energy capacity size (kWh)
         self.capex_per_kwh = tech_data["capex_per_kwh"]

@@ -70,7 +70,7 @@ carbon_df.set_index('date', inplace=True)
 full_year_days = pd.date_range(start='2025-01-01', end='2025-12-31', freq='D')
 carbon_df = carbon_df.reindex(full_year_days)
 
-# 3. Apply your custom handling for missing start/end boundary values:
+# 3. Apply the usual custom handling for missing start/end boundary values:
 # For Jan 1st (2025-01-01), backward-fill from Jan 2nd
 carbon_df.loc['2025-01-01'] = carbon_df.loc['2025-01-02']
 # For Dec 31st (2025-12-31), forward-fill from Dec 30th
@@ -154,7 +154,7 @@ ELEC_REVENUE = 0.10                             # Base market price for CHP sale
 # =============================================================================
 # 3. HIGH-RESOLUTION TIMESTEP DATA EXPANSION (8760 -> 35040)
 # =============================================================================
-SELECTED_CITY = "Zurich"
+SELECTED_CITY = "Zurich" #HERE CHOOSE THE CITY TO RUN THE SIMULATIONS
 DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
 PRICE_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/DAM_Prices_2025_Consolidated.xlsx'
 
@@ -172,7 +172,7 @@ CITY_CONFIG = {
 }
 
 # --- 1. LOAD DEMAND DATA FROM EXCEL & SCALE TO 15-MIN QUARTERS ---
-# Using read_excel to handle your original .xlsx files properly
+# Using read_excel to handle the original .xlsx files properly
 df_demand = pd.read_excel(DEMAND_DATA_PATH)
 selected_col_heat = CITY_CONFIG[SELECTED_CITY]["heat_col"]
 selected_col_cool = CITY_CONFIG[SELECTED_CITY]["cool_col"]
@@ -185,7 +185,7 @@ cool_kwh_hourly = (df_demand[selected_col_cool] * 1000).tolist()
 HEAT_DEMAND_15MIN = [hourly_val / 4 for hourly_val in heat_kwh_hourly for _ in range(4)]
 COOLING_DEMAND_15MIN = [hourly_val / 4 for hourly_val in cool_kwh_hourly for _ in range(4)]
 
-# Calculate the true peak thermal power rate (kW) for your TES constraint structures
+# Calculate the true peak thermal power rate (kW) for the TES constraint structures
 # (Energy in 15 mins * 4 quarters/hour = Peak instantaneous power rate in kW)
 PEAK_DEMAND_KW = max(HEAT_DEMAND_15MIN) * 4
 
@@ -203,7 +203,7 @@ T_source_15min = np.array([monthly_temps[dt.month] for dt in time_index_15min])
 
 def _calculate_heating_cop(T_s_vec, T_k):
     dT = T_k - np.array(T_s_vec)
-    # The Regression Formula from R717 refrigerant performance data
+    # The Regression Formula from R717 refrigerant performance data (same as the first stage optimization)
     cop = 0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684
     return np.maximum(cop, 1.0).tolist()
 

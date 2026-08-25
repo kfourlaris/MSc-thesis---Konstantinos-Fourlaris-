@@ -172,7 +172,7 @@ CITY_CONFIG = {
 }
 
 # --- 1. LOAD DEMAND DATA FROM EXCEL & SCALE TO 15-MIN QUARTERS ---
-# Using read_excel to handle your original .xlsx files properly
+# Using read_excel to handle the original .xlsx files properly
 df_demand = pd.read_excel(DEMAND_DATA_PATH)
 selected_col_heat = CITY_CONFIG[SELECTED_CITY]["heat_col"]
 selected_col_cool = CITY_CONFIG[SELECTED_CITY]["cool_col"]
@@ -185,7 +185,7 @@ cool_kwh_hourly = (df_demand[selected_col_cool] * 1000).tolist()
 HEAT_DEMAND_15MIN = [hourly_val / 4 for hourly_val in heat_kwh_hourly for _ in range(4)]
 COOLING_DEMAND_15MIN = [hourly_val / 4 for hourly_val in cool_kwh_hourly for _ in range(4)]
 
-# Calculate the true peak thermal power rate (kW) for your TES constraint structures
+# Calculate the true peak thermal power rate (kW) for the TES constraint structures
 # (Energy in 15 mins * 4 quarters/hour = Peak instantaneous power rate in kW)
 PEAK_DEMAND_KW = max(HEAT_DEMAND_15MIN) * 4
 

@@ -50,7 +50,8 @@ class CHP15Min2:
             # 2. Upper and Lower Bounds
             model.addConstr(self.V_heat[t] <= self.P_cap * self.y_on[t], name=f"up_bound_fixed_P_{self.name}_t{t}")
             model.addConstr(self.V_heat[t] >= self.delta * self.P_cap * self.y_on[t], name=f"low_bound_fixed_P_{self.name}_t{t}")
-            # 4. Last CONSTRAINT: CAP CHP HEAT PRODUCTION TO TOWN DEMAND
+
+            # 3. Last CONSTRAINT: CAP CHP HEAT PRODUCTION TO TOWN DEMAND
             demand_kw = heat_demand_15min[t] / 0.25
             model.addConstr(
                 self.V_heat[t] <= demand_kw,

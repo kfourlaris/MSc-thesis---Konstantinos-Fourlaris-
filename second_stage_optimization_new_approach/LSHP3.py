@@ -113,7 +113,7 @@ class LargeScaleHeatPump15Min2:
             # --- 1. THE NET ELECTRICAL REAL-TIME IMPORT DEFINITION ---
             net_electrical_input = self.U_elec[t] + self.V_balancing_down[t, scenario] - self.V_balancing_up[t, scenario]
 
-            # --- 2. PERFORMANCE CONSTRAINTS (THE TRUE THERMODYNAMIC BRIDGE) ---
+            # --- 2. PERFORMANCE CONSTRAINTS (THE CONVERSION BRIDGE) ---
             model.addConstr((self.V_heat[t, scenario] / cop_vector_15min[t]) + (
                         self.V_cool[t] / cop_cool_vector_15min[t]) == net_electrical_input,
                             name=f"net_electrical_thermal_bridge_{self.name}_t{t}_{scenario}")
@@ -141,7 +141,7 @@ class LargeScaleHeatPump15Min2:
                 self.U_elec[t] + self.V_balancing_down[t, scenario] <= max_elec_input * self.y_on[t],
                 name=f"bal_down_physical_limit_{self.name}_t{t}_{scenario}")
 
-            # --- NEW PROPORTIONAL BID RATIO LIMIT ---
+            # --- PROPORTIONAL BID RATIO LIMIT ---
             model.addConstr(
                 self.V_balancing_down[t, scenario] <= 2 * self.U_elec[t],
                 name=f"bal_down_proportional_baseline_cap_{self.name}_t{t}_{scenario}"

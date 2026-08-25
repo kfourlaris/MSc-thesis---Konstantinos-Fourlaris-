@@ -227,7 +227,7 @@ if model.Status == GRB.OPTIMAL:
     # =========================================================================
     target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
 
-    # Define your exact 1-week validation window
+    # Define the exact 1-week validation window
     start_t = 1152
     end_t = 2496
     week_timesteps = range(start_t, end_t)

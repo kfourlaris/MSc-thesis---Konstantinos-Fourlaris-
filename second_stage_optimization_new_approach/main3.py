@@ -23,7 +23,7 @@ print(f"Average cooling COP: {sum(config3.COP_COOL_VEC_15MIN) / 35040:.2f}")
 
 # --- STEP 1: INITIALIZE GUROBI MULTI-SCENARIO ENVIRONMENT ---
 model = gp.Model("Stage2_15Min_Balancing_Optimization_new_approach")
-model.setParam('MIPGap', 0.03)  # Maintain identical performance gap target
+model.setParam('MIPGap', 0.01)  # Maintain identical performance gap target
 model.Params.TimeLimit = 7200.0
 # Force Gurobi to use the deterministic Barrier Method (skips concurrent wait)
 model.setParam('Method', 3)
@@ -149,7 +149,7 @@ if model.Status == GRB.OPTIMAL:
     numerical_bal_up = bal_arbitrage_up_s.getValue()
     numerical_bal_down = bal_arbitrage_down_s.getValue()
 
-    # 2. Pre-calculate your specific financial breakdowns as pure numbers
+    # 2. Pre-calculate the specific financial breakdowns as pure numbers
     calculated_baseline_cost = model.ObjVal - total_fixed_annual_investment + numerical_bal_up - numerical_bal_down
     net_balancing_opex = - numerical_bal_up + numerical_bal_down
 
@@ -197,7 +197,7 @@ if model.Status == GRB.OPTIMAL:
     # =========================================================================
     target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
 
-    # Define your exact 1-week validation window
+    # Define the exact 1-week validation window
     start_t = 1152
     end_t = 2496
     week_timesteps = range(start_t, end_t)
