@@ -5,7 +5,7 @@ class PitThermalEnergyStorage:
     def __init__(self, name, e_min_market=50, e_max_market=2779200,
                  capex_per_kwh=8, loss_rate=0.0005, eta_charge=0.9, eta_disch=0.9):
         """
-        Args:
+        Args: All data from the Dronninglund Pit Theraml Energy Storage (https://doi.org/10.1016/j.solener.2022.12.046)
             e_min_market: Minimum installable energy capacity (KWh)
             e_max_market: Maximum installable energy capacity (KWh) 60000m3
             capex_per_kwh: Investment cost per unit of energy capacity (https://doi.org/10.1016/j.solener.2022.12.046) + land costs
@@ -52,7 +52,7 @@ class PitThermalEnergyStorage:
             model.addConstr(self.E_state[t] >= 0, name=f"cap_limit_down{self.name}_{t}")
 
             #charge and discharge constraints
-            #The charging energy at time t cannot exceed the size of the LSHP
+            #The charging energy at time t cannot exceed the heat output of the LSHP
             model.addConstr(self.U_charge[t] <= hp_instance.V_heat[t], name=f"charging_constraint_one{self.name}_{t}")
             model.addConstr(self.U_charge[t] <= hp_instance.p_max * self.C_tech[t], name=f"charging_constraint_two{self.name}_{t}" )
             #The discharging energy at time t cannot exceed the heat peak demand power of the network

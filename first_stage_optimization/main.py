@@ -23,7 +23,7 @@ print(f"Average COP: {sum(config.COP_VEC) / 8760:.2f}")
 print(f"Average cooling COP: {sum(config.COP_COOL_VEC) / 8760:.2f}")
 
 # --- STEP 0: LOAD DYNAMIC DEMAND DATA ---
-# Load the final MWh file
+# Load the final file
 df_demand = pd.read_excel(config.DEMAND_DATA_PATH)
 df_prices = pd.read_excel(config.PRICE_DATA_PATH)
 
@@ -33,8 +33,8 @@ selected_col_cool = config.CITY_CONFIG[config.SELECTED_CITY]["cool_col"]
 selected_elec_col = config.CITY_CONFIG[config.SELECTED_CITY]["elec_price_col"]
 
 # Extract the hourly values as a list (8760 values)
-# Note: Since the model uses kW, and the file is in MWh,
-# 1 MWh in one hour = 1000 kW power.
+# Note: Since the model uses kW
+# 1 MWh = 1000 kWh.
 HEAT_DEMAND_VEC = (df_demand[selected_col_heat] * 1000).tolist()
 COOLING_DEMAND_VEC = (df_demand[selected_col_cool] * 1000).tolist()
 peak_demand_kw = max(HEAT_DEMAND_VEC)
@@ -43,7 +43,7 @@ ELEC_PRICE_VEC = config.DYNAMIC_ELEC_PRICES.tolist()
 # --- STEP 1: INITIALIZATION ---
 model = gp.Model("District_Energy_Optimization")
 timesteps = range(8760)  # Hourly resolution for one year
-model.setParam('MIPGap', 0.01)
+model.setParam('MIPGap', 0.01) #Enforce MILP gap to be less than 1%
 
 # --- STEP 2: INSTANTIATE TECHNOLOGIES ---
 # 1. Check experiment conditions
@@ -84,7 +84,7 @@ for tech in technologies:
     if isinstance(tech, LargeScaleHeatPump):
         tech.add_constraints(model, timesteps, config.COP_VEC, config.COP_COOL_VEC)
     elif isinstance(tech, LargeScaleChiller):
-        tech.add_constraints(model, timesteps, config.COP_COOL_VEC) # Uses cooling vector
+        tech.add_constraints(model, timesteps, config.COP_COOL_VEC) # Uses cooling vector only
     else:
         tech.add_constraints(model, timesteps)
 
@@ -94,7 +94,7 @@ if tes_enabled:
     tes.add_constraints(model, timesteps, hp_instance=hp_inst, peak_demand_kw=peak_demand_kw)
 
 # --- STEP 3: GLOBAL ENERGY BALANCE ---
-# Heat production from all units must meet demand every hour
+# Heat and cooling production from all units must meet demand every hour
 model.addConstrs(
     (gp.quicksum(tech.V_heat[t] for tech in technologies if hasattr(tech, 'V_heat')) + (tes.V_disch[t] - tes.U_charge[t] if tes_enabled else 0) == HEAT_DEMAND_VEC[t]
      for t in timesteps),
@@ -169,7 +169,6 @@ if model.Status == GRB.OPTIMAL:
 
     # --- NEW: VOLUME CALCULATION ---
     # Define the Delta T (DT).
-    # Example: If using 65°C supply and 25°C return (4th Gen target), DT = 40.
         delta_t = config.T_SINK - config.T_RETURN
 
     # Constant for water: 1.162 Wh per kg per degree Celsius
@@ -255,7 +254,7 @@ if model.Status == GRB.OPTIMAL:
         plt.show()
 
 
-    #create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
+    create_heat_dispatch_figure(t_plot, 'Heat Dispatch: Full Year')
     create_heat_dispatch_figure(jan_slice, 'Heat Dispatch: 13-26 January 2025')
     create_heat_dispatch_figure(aug_slice, 'Heat Dispatch: 4-17 August 2025')
 
@@ -293,7 +292,7 @@ if model.Status == GRB.OPTIMAL:
             plt.show()
 
 
-        #create_tes_double_subplot(t_plot, 'Full Year')
+        create_tes_double_subplot(t_plot, 'Full Year')
         create_tes_double_subplot(jan_slice, '13-26 January 2025')
         create_tes_double_subplot(aug_slice, '13-26 August 2025')
 
@@ -377,6 +376,7 @@ if model.Status == GRB.OPTIMAL:
             plt.show()
 
         # Generate plots for January and August slices
+        create_combined_dispatch_soc_figure(t_plot, 'Heat Dispatch: Full Year')
         create_combined_dispatch_soc_figure(jan_slice, 'Combined Heat Dispatch & TES SoC: 13-26 January 2025')
         create_combined_dispatch_soc_figure(aug_slice, 'Combined Heat Dispatch & TES SoC: 4-17 August 2025')
 
@@ -458,7 +458,7 @@ if model.Status == GRB.OPTIMAL:
         if config.TECH_SWITCHES.get("BiomassBoiler"):
             total_u_biomass_kwh += all_techs["BiomassBoiler"].U_biomass[t].X
 
-    # Multiplying by standardized Ton CO2 / kWh variables from config
+    # Multiplying by standardized Ton CO2 / kWh variables from config file
     op_emissions_elec = total_u_elec_kwh * config.TON_CO2_EMISSION_FACTORS["electricity"]
     op_emissions_gas = total_u_gas_kwh * config.TON_CO2_EMISSION_FACTORS["gas"]
     op_emissions_biomass = total_u_biomass_kwh * config.TON_CO2_EMISSION_FACTORS["biomass"]

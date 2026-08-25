@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-# --- GLOBAL SETTINGS (Subject to change) ---
-INTEREST_RATE = 0.12
-LIFESPAN = 20
+# --- GLOBAL SETTINGS  ---
+INTEREST_RATE = 0.12  #risk-adverse interest rate
+LIFESPAN = 20  # LSHP's lifespan
 T_SINK = 70.0  # DH Supply Temperature
 T_RETURN = 30  # DH Return Temperature
 T_COOLING = 6  # DC Supply Temperature Reporting instructions for completing the district heating and cooling template Directive 2017/27/EU
@@ -21,12 +21,12 @@ CITY_CONFIG = {
     "Zurich": {
         "heat_col": "Zurich_Total_Heating_MWh",
         "cool_col": "Zurich_Total_Cooling_MWh",
-        "elec_price_col": "Swiss_DAM_Price_2025"  # Actual 2025 price profile for Switzerland
+        "elec_price_col": "Swiss_DAM_Price_2025"  # Actual 2025 DAM price profile for Switzerland
     },
     "Amsterdam": {
         "heat_col": "Amsterdam_Total_Heating_MWh",
         "cool_col": "Amsterdam_Total_Cooling_MWh",
-        "elec_price_col": "Dutch_DAM_Price_2025" # Actual 2025 price profile for Netherlands
+        "elec_price_col": "Dutch_DAM_Price_2025" # Actual 2025 DAM price profile for Netherlands
     }
 }
 
@@ -65,7 +65,7 @@ carbon_df.set_index('date', inplace=True)
 full_year_days = pd.date_range(start='2025-01-01', end='2025-12-31', freq='D')
 carbon_df = carbon_df.reindex(full_year_days)
 
-# 3. Apply your custom handling for missing start/end boundary values:
+# 3. Apply the custom handling for missing start/end boundary values:
 # For Jan 1st (2025-01-01), backward-fill from Jan 2nd
 carbon_df.loc['2025-01-01'] = carbon_df.loc['2025-01-02']
 # For Dec 31st (2025-12-31), forward-fill from Dec 30th
@@ -142,10 +142,10 @@ FUEL_PRICES = {
     "gas": gas_input_prices_hourly
 }
 
-ELEC_REVENUE = 0.10  # Selling price for CHP electricity
+ELEC_REVENUE = 0.10  # Selling price for CHP electricity (assumed hedged price)
 DYNAMIC_ELEC_PRICES = elec_prices_kwh
 
-# --- DATA GENERATION (Water Temperatures (Lake/river)) ---
+# --- DATA GENERATION (Water Temperatures (Lake/river)) --- (source: Danish Energy Agency)
 monthly_temps = {
     1: 4, 2: 2, 3: 5, 4: 7, 5: 12, 6: 14,
     7: 17, 8: 18, 9: 15, 10: 11, 11: 7, 12: 4
@@ -239,7 +239,7 @@ print(EM_BIOMASS_Ton_KWH * 1000)
 
 # 5. EMBEDDED INFRASTRUCTURE EMISSIONS (Common across locations)
 # -------------------------------------------------------------------------
-#EcoInvent orginal search sting results
+#EcoInvent original search sting results
 ORIGINAL_BB_EMISSIONS = 2.79e5       # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
 ORIGINAL_KW_BB = 5000                # market for furnace wood chips with silo 5000 KW -> 2.79 * 10^5 kg co2 per 5000 KW
 ORIGINAL_CHP_EMISSIONS = 5.44e4      # heat and power co-generation unit construction, 1MW electrical, components for heat only_Europe -> 5.44 * 10^4 kg co2 per 1000 KW

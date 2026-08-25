@@ -16,7 +16,7 @@ class LargeScaleChiller:
         self.p_min = p_min_market
         self.p_max = p_max_market
         self.delta = min_load_fraction
-        self.capex_per_kw = capex_per_kw_c
+        self.capex_per_kw = capex_per_kw_c #equal to the HP
         self.opex_per_kw = opex_per_kw_c
 
         # Placeholders for Variables
