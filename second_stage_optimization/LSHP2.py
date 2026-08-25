@@ -5,14 +5,14 @@ class LargeScaleHeatPump15Min:
     def __init__(self, name, min_load_fraction=0.15):
         """
         Second-Stage 15-Minute Operational Class for a Large-Scale Heat Pump.
-        Reads installed footprint and financial overhead directly from config.py
+        Reads installed footprint and financial overhead directly from config2.py
 
         Note: self.P_cap tracks the installed THERMAL capacity (kW_th).
         """
         self.name = name
         self.delta = min_load_fraction
 
-        # Pull technical details from your configuration dictionary
+        # Pull technical details from the configuration dictionary
         tech_data = config2.INSTALLED_TECH["LargeScaleHeatPump"]
         self.P_cap = tech_data["P_cap"]  # Fixed thermal size (kW_th)
         self.capex_per_kw = tech_data["capex_per_kw"]
@@ -141,7 +141,7 @@ class LargeScaleHeatPump15Min:
 
             # --- NEW PROPORTIONAL BID RATIO LIMIT ---
             # Forces Balancing Down to scale realistically with the cleared baseline input electricity.
-            # Max real-time increase is capped at 200% (x2) of the current U_elec baseline.
+            # Max real-time increase is capped at (x2) of the current U_elec baseline.
             model.addConstr(
                 self.V_balancing_down[t, scenario] <= 2 * self.U_elec[t, scenario],
                 name=f"bal_down_proportional_baseline_cap_{self.name}_t{t}_{scenario}"

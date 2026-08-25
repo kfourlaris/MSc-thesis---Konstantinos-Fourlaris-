@@ -16,7 +16,7 @@ class CHP15Min:
         self.eta_th = efficiency_th
         self.delta = min_load_fraction
 
-        # Pull technical details from your configuration dictionary
+        # Pull technical details from the config file
         tech_data = config2.INSTALLED_TECH["CHP"]
         self.P_cap = tech_data["P_cap"]  # Fixed electrical size (kW_el)
         self.capex_per_kw = tech_data["capex_per_kw"]

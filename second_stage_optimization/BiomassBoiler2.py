@@ -8,7 +8,7 @@ class BiomassBoiler15Min:
         self.eta = efficiency
         self.delta = min_load_fraction
 
-        # Pull the data structures from the new config file
+        # Pull the data structures from the second stage config file
         tech_data = config2.INSTALLED_TECH["BiomassBoiler"]
         self.P_cap = tech_data["P_cap"]
         self.capex_per_kw = tech_data["capex_per_kw"]

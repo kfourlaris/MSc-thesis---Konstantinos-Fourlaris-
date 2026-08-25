@@ -43,7 +43,7 @@ INSTALLED_TECH = {
 # =============================================================================
 INTEREST_RATE = 0.12
 LIFESPAN = 20
-T_SINK = 70.0
+T_SINK = 70
 T_RETURN = 30
 T_COOLING = 6
 
@@ -70,7 +70,7 @@ carbon_df.set_index('date', inplace=True)
 full_year_days = pd.date_range(start='2025-01-01', end='2025-12-31', freq='D')
 carbon_df = carbon_df.reindex(full_year_days)
 
-# 3. Apply your custom handling for missing start/end boundary values:
+# 3. Apply the first stage custom handling for missing start/end boundary values:
 # For Jan 1st (2025-01-01), backward-fill from Jan 2nd
 carbon_df.loc['2025-01-01'] = carbon_df.loc['2025-01-02']
 # For Dec 31st (2025-12-31), forward-fill from Dec 30th
@@ -154,7 +154,7 @@ ELEC_REVENUE = 0.10                             # Fixed market price for CHP sal
 # =============================================================================
 # 3. HIGH-RESOLUTION TIMESTEP DATA EXPANSION (8760 -> 35040)
 # =============================================================================
-SELECTED_CITY = "Zurich"
+SELECTED_CITY = "Zurich" #CHOOSE THE SELECTED CITY as in the first stage optimization
 DEMAND_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Final_Network_Demand_MWh.xlsx'
 PRICE_DATA_PATH = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/DAM_Prices_2025_Consolidated.xlsx'
 
@@ -203,7 +203,7 @@ T_source_15min = np.array([monthly_temps[dt.month] for dt in time_index_15min])
 
 def _calculate_heating_cop(T_s_vec, T_k):
     dT = T_k - np.array(T_s_vec)
-    # The Regression Formula from R717 refrigerant performance data
+    # The Regression Formula from R717 refrigerant performance data from the first stage optimization
     cop = 0.0014515 * (dT ** 2) - 0.23104 * dT + 11.684
     return np.maximum(cop, 1.0).tolist()
 
@@ -243,7 +243,7 @@ else:
 # 1. Load the Probabilities dynamically from the selected file
 df_probs = pd.read_excel(BALANCING_DATA_PATH, sheet_name='Probabilities')
 
-# Map Scenario names like 'Scenario 1' to 'S1' to match your column headers
+# Map Scenario names like 'Scenario 1' to 'S1' to match the column headers
 df_probs['Short_Name'] = df_probs['Scenario'].str.replace('Scenario ', 'S')
 PROBABILITY = dict(zip(df_probs['Short_Name'], df_probs['Probability']))
 SCENARIOS = list(PROBABILITY.keys())  # Generates ['S1', 'S2', 'S3', 'S4', 'S5']

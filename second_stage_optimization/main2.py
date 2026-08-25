@@ -68,7 +68,7 @@ for s in config2.SCENARIOS:
     model.addConstrs(
         (boiler.V_heat[t, s] * 0.25 +
          chp.V_heat[t, s] * 0.25 +
-         lshp.V_heat_DA[t, s] * 0.25 +  # <--- ONLY Day-Ahead generated heat allowed here!
+         lshp.V_heat_DA[t, s] * 0.25 +
          lshp.V_heat_bal_down[t, s] * 0.25 +
          (tes.V_disch[t, s] - tes.U_charge[t, s]) * 0.25 == config2.HEAT_DEMAND_15MIN[t]
          for t in timesteps_15min),
@@ -147,7 +147,7 @@ if model.Status == GRB.OPTIMAL:
     numerical_bal_up = bal_arbitrage_up_s.getValue()
     numerical_bal_down = bal_arbitrage_down_s.getValue()
 
-    # 2. Pre-calculate your specific financial breakdowns as pure numbers
+    # 2. Pre-calculate the specific financial breakdowns as pure numbers
     # Baseline cost = Total Cost - CAPEX - (Balancing Up + Balancing Down values)
     calculated_baseline_cost = model.ObjVal - total_fixed_annual_investment + numerical_bal_up - numerical_bal_down
     net_balancing_opex =  - numerical_bal_up + numerical_bal_down
@@ -223,7 +223,7 @@ if model.Status == GRB.OPTIMAL:
     print("=" * 65 + "\n")
 
     # =========================================================================
-    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO ONE SPECIFIC WEEK) ---
+    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (ZOOMED TO TWO SPECIFIC WEEKS) ---
     # =========================================================================
     target_scenario = 'S1'  # Change to 'S2', 'S3', etc., to inspect others
 
@@ -309,7 +309,7 @@ if model.Status == GRB.OPTIMAL:
     plt.show(block=True)
 
     # =========================================================================
-    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (MULTI-WEEK COMPARISON) ---
+    # --- STEP 6: PLOTTING FOR RESULTS VALIDATION (MULTI-WEEK COMPARISON) SAME AS STAGE 1 PLOTS---
     # =========================================================================
     target_scenario = 'S1'  # Target scenario profile to isolate (2024 BM prices)
 
