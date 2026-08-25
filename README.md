@@ -41,7 +41,7 @@ Before running optimization models, these standalone scripts process raw climati
 * **`Second Stage Optimization/`**:
   * `config2.py`: Stage-two control panel receiving the optimal asset capacities determined in Stage 1, alongside 15-minute operational and market parameters.
   * `Technology Clases`: They function like the first stage optimization but now with added decision variables and constraints regarding the participation in BM.
-  * `main2.py` (or execution script): Formulates the stochastic MILP co-optimization for optimal heating and cooling dispatch of the MES through Day-Ahead and Balancing Market (aFRR energy flexibility) participation over representative historical clusters..
+  * `main2.py` (or execution script): Formulates the stochastic MILP co-optimization with the same objective function as the first stage optimization for optimal heating and cooling dispatch of the MES through Day-Ahead and Balancing Market (aFRR energy flexibility) participation over representative historical clusters.
 * **`Second Stage Optimization Sequential Approach/`**:
   * Implements a benchmark literature formulation where DAM electricity, natural gas, and biomass procurement decisions are fixed scenario-independently before balancing activations occur.
 * *Note on Repository Legacy:* The `stochastic DA running/` folder represents an exploratory branch for joint DAM/BM stochasticity and can be disregarded.
@@ -65,3 +65,4 @@ To evaluate different network layouts, examined networks and investment pathways
 2. **System Configurations:** Toggle the boolean technology flags in `config.py` to compare alternative generation mixes.
 3. **Greenfield vs. Brownfield Pathway:** The repository defaults to a **Brownfield** setup ($CAPEX = 0$ for legacy CHP and BB). To simulate a **Greenfield** setup, enter the specific capital investment costs for `CHP` and `BB` in their respective class files in Stage 1 and within `config2.py` for Stage 2.
 4. **Execution Pipeline:** Always solve Stage 1 first to determine optimal asset sizing, verify capacity hand-offs in `config2.py`, and execute Stage 2 to optimize 15-minute aFRR balancing market participation.
+5. **Local Dataset Paths:** If running the scripts locally and adjusting absolute or relative directory paths in the configuration files, inspect the **final component of each path** (the target filename and subfolder in `Input Data/`) to identify which exact dataset or profile is being ingested.
