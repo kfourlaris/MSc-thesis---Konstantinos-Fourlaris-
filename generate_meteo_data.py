@@ -9,7 +9,7 @@ from datetime import datetime
 
 config.block_large_requests = False
 
-# Zurich coordinates
+# Zurich coordinates to export hourly ambient temperature
 zurich = Point(47.3769, 8.5417)
 
 # --- STATION SELECTION LOGIC ---
@@ -33,7 +33,7 @@ print("Data saved to Zurich.csv")
 
 config.block_large_requests = False
 
-# Amsterdam location
+# Amsterdam location to export hourly ambient temperature
 amsterdam = Point(52.3676, 4.9041)  # latitude, longitude
 
 #Get nearest station (returns DataFrame directly)
@@ -48,7 +48,7 @@ end = datetime(2025, 12, 31, 23)
 # Fetch hourly data
 data = hourly(station_id, start, end).fetch()
 
-# DISREGARD FEBRUARY 29th ONLY
+# DISREGARD FEBRUARY 29th ONLY if needed
 # we remove the extra day from leap years but keep the rest of the year's data for the same reason as above
 data = data[~((data.index.month == 2) & (data.index.day == 29))]
 
@@ -67,7 +67,7 @@ print("Data saved to Amsterdam.csv")
 df_zurich = pd.read_csv("/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Zurich_meteo_raw_data.csv")
 df_amsterdam = pd.read_csv("/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Amsterdam_meteo_raw_data.csv")
 
-# 2. Count how many hours are strictly above 30 degrees for each city
+# 2. Count how many hours are strictly above 25.5 degrees for each city
 zurich_hot_hours = len(df_zurich[df_zurich['temp'] >= 25.5])
 amsterdam_hot_hours = len(df_amsterdam[df_amsterdam['temp'] >= 25.5])
 

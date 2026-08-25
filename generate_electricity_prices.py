@@ -4,7 +4,7 @@ import os
 
 # --- PATH CONFIGURATION ---
 base_path = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/'
-ch_filename = 'GUI_ENERGY_PRICES_202412312300-202512312300_Switzerland.csv'  # Ensure these match your filenames
+ch_filename = 'GUI_ENERGY_PRICES_202412312300-202512312300_Switzerland.csv'  # Ensure these match the filenames
 nl_filename = 'GUI_ENERGY_PRICES_202412312300-202512312300_Netherlands.csv'
 output_filename = 'DAM_Prices_2025_Consolidated.xlsx'
 
@@ -26,7 +26,7 @@ def generate_consolidated_excel(base_path, ch_file, nl_file):
         price_col = 'Day-ahead Price (EUR/MWh)'
         df[price_col] = pd.to_numeric(df[price_col], errors='coerce')
 
-        # Resample to Hourly (averaging 4 quarters)
+        # Resample to Hourly (averaging 4 quarters) because of the change in spot market rules where the resolution became 15-min on last months of the year
         df_hourly = df[[price_col]].resample('h').mean()
 
         # Filter strictly for 2025
@@ -55,7 +55,7 @@ def generate_consolidated_excel(base_path, ch_file, nl_file):
         price_col = 'Day-ahead Price (EUR/MWh)'
         df[price_col] = pd.to_numeric(df[price_col], errors='coerce')
 
-        # Resample to Hourly (averaging 4 quarters)
+        # Resample to Hourly (averaging 4 quarters) same reason as CH
         df_hourly = df[[price_col]].resample('h').mean()
 
         # Filter strictly for 2025

@@ -1,8 +1,7 @@
 import pandas as pd
-import yfinance as yf  # Run 'pip install yfinance' if you don't have it
+import yfinance as yf
 
-# Ticker for ICE EUA Carbon Futures on Yahoo Finance is 'CFI2Y00'
-# or we use the front-month Dec contract tracking. Let's pull the official proxy.
+# Ticker for ICE EUA Carbon Prices on Yahoo Finance is 'CO2.MI'
 ticker = "CO2.MI"
 
 print("Fetching daily 2025 EU ETS carbon prices...")
@@ -19,7 +18,7 @@ df_clean.set_index('date', inplace=True)
 df_full_year = df_clean.resample('D').ffill()
 df_full_year.reset_index(inplace=True)
 
-# Save it directly into your project directory
+# Save it directly into the project directory
 output_path = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/eu_ets_2025.csv'
 df_full_year.to_csv(output_path, index=False)
 

@@ -16,7 +16,7 @@ def create_energy_demand_data():
     df['Hour_of_Year'] = range(1, 8761)
     df['hour_lookup'] = df['Timestamp'].dt.hour + 1
 
-    # 3. SEASON LOGIC (DHW Residential Only)
+    # 3. SEASON LOGIC (DHW Residential Only) according to the Hotmaps instructions
     def get_season(dt):
         md = dt.month * 100 + dt.day
         if 515 <= md <= 914:
@@ -28,7 +28,7 @@ def create_energy_demand_data():
 
     df['Season_Lookup'] = df['Timestamp'].apply(get_season)
 
-    # 4. DAY TYPE LOGIC
+    # 4. DAY TYPE LOGIC according to the hotmaps instructions
     zh_hols = holidays.CH(prov='ZH', years=2025)
     am_hols = holidays.NL(years=2025)
     df['DT_ZH'] = df['Timestamp'].apply(
@@ -43,7 +43,7 @@ def create_energy_demand_data():
         raw['time'] = pd.to_datetime(raw['time'])
 
         # Group by Month, Day, and Hour and calculate the average temperature
-        # This creates a "typical" value for every hour of the year
+        # This creates a "typical" value for every hour of the year (NOT NEEDED SINCE WE HAVE 1 YEAR OF HOURLY AMBIENT TEMPERATURES)
         series = raw.groupby([
             raw['time'].dt.month,
             raw['time'].dt.day,

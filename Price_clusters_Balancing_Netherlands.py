@@ -4,7 +4,7 @@ from sklearn.preprocessing import RobustScaler
 from sklearn_extra.cluster import KMedoids
 
 # =================================================================
-# 1. CONFIGURATION
+# 1. CONFIGURATION for K-MEDOIDS CLUSTERING
 # =================================================================
 FILE_PATHS = [
     '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Amsterdam/settlement_prices_201812312300_201912312300.csv',
@@ -17,6 +17,7 @@ FILE_PATHS = [
 ]
 N_SCENARIOS = 5
 
+# Naming of the columns of interest in raw data
 TIME_COL = 'Timeinterval Start Loc'
 UP_PRICE_COL = 'Price Dispatch Up'
 DOWN_PRICE_COL = 'Price Dispatch Down'
@@ -84,7 +85,7 @@ def run_stochastic_clustering_nl():
     # 4. RESULTS & EXCEL EXPORT
     print("\n" + "=" * 50 + "\nSTOCHASTIC K-MEDOIDS REPRESENTATIVE YEARS (NL)\n" + "=" * 50)
 
-    # Prepare the Main Data Sheet
+    # Prepare the Main Data Excel Sheet
     export_data = {'Quarter': np.arange(1, 35041)}
     prob_data = []
 

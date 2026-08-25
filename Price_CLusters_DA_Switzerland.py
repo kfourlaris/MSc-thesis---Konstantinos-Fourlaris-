@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.preprocessing import RobustScaler
 from sklearn_extra.cluster import KMedoids
 
+# Eventually not relevant since no DA stochasticity was introduced at the end
 # =================================================================
 # 1. CONFIGURATION
 # =================================================================

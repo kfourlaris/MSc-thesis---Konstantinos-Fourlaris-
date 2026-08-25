@@ -9,7 +9,7 @@ def calculate_final_energy_demands():
     # 1. THE CONTROL PANEL
     # ---------------------------------------------------------
 
-    # HEATING Demand = (Demand * 1.1 (heat losses)) - WtE
+    # HEATING Demand = (Demand * 1.1 (heat losses)) - WtE [shares from sources explained in the Methodology report]
     params = {
         'Zurich': {
             'Annual_Heat_MWh': 434340,  # Total Heat (SH + DHW) => Source: Ehub modeling and optimization of ERZ district heating network in Zurich

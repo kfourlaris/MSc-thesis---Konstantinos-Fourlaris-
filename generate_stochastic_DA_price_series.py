@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-
+# Eventually not relevant since no DA stochasticity was introduced at the end
 def expand_dam_scenarios_with_tariff_CH():
     # --- PATH CONFIGURATION ---
     input_file = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Day Ahead Energy Prices Zurich/Representative_DAM_Price_Scenarios_CH.xlsx'

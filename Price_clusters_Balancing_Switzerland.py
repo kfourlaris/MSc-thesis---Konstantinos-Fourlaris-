@@ -4,7 +4,7 @@ from sklearn.preprocessing import RobustScaler
 from sklearn_extra.cluster import KMedoids
 
 # =================================================================
-# 1. CONFIGURATION
+# 1. CONFIGURATION for K-MEDOIDS CLUSTERING
 # =================================================================
 FILE_PATHS = [
     '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Zurich/EnergieUebersichtCH-2016.xls',
@@ -18,6 +18,8 @@ FILE_PATHS = [
     '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Zurich/EnergieUebersichtCH-2024.xlsx',
     '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/Balancing Energy Prices Zurich/EnergieUebersichtCH-2025.xlsx'
 ]
+
+# Naming of the sheet tab of interest in raw data
 N_SCENARIOS = 5
 SHEET_NAME = 'Zeitreihen0h15'
 
@@ -39,9 +41,9 @@ def run_stochastic_clustering():
             print(f"❌ Could not read file {file}: {e}")
             continue
 
-        time_col = df.columns[0]
-        pos_price_col = df.columns[21]
-        neg_price_col = df.columns[22]
+        time_col = df.columns[0] # the column of the time
+        pos_price_col = df.columns[21] # the column for upward flexibility in the raw data
+        neg_price_col = df.columns[22] # the column for downward flexibility in the raw data
 
         # A. Filter Leap Year (Feb 29) to keep years uniform at 35,040 rows
         df[time_col] = pd.to_datetime(df[time_col], dayfirst=True)

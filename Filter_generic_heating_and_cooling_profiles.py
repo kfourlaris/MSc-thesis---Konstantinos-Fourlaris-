@@ -5,7 +5,7 @@ import os
 def filter_raw_data():
     base_path = '/Users/kostf/Library/CloudStorage/OneDrive-Προσωπικό/Έγγραφα/ETH Zurich/4th semester/system-level-optimization/Input data/'
 
-    # List of your 6 raw files - PLEASE ENSURE THESE FILENAMES ARE CORRECT
+    # List of the 6 raw files - Includes SH, SC, DHW both residential and tertiary
     raw_files = [
         'Residential_space_heating_load.csv',
         'Tertiary_space_heating_load.csv',
@@ -15,7 +15,7 @@ def filter_raw_data():
         'Tertiary_hot_domestic_water_load.csv'
     ]
 
-    target_codes = ['CH04', 'NL32']
+    target_codes = ['CH04', 'NL32'] #reduce the rows of the input data
 
     for file_name in raw_files:
         full_path = os.path.join(base_path, file_name)
