@@ -18,7 +18,7 @@ This repository implements a **two-stage optimization framework** to assess the 
 
 ## 🧭 How to Read This Codebase
 
-The codebase is organized into dedicated modules for exogenous data preprocessing, stage-one optimization formulation, and stage-two stochastic operational co-optimization. formulation
+The codebase is organized into dedicated modules for exogenous data preprocessing, stage-one optimization formulation, and stage-two stochastic operational co-optimization formulation.
 
 ### 1. Data Preprocessing & Exogenous Parameter Scripts
 Before running optimization models, these standalone scripts process raw climatic, demand, and market data into model-ready time series:
@@ -26,7 +26,7 @@ Before running optimization models, these standalone scripts process raw climati
 * `Filter_generic_heating_and_cooling_profiles.py`: Filters raw [Hotmaps](https://www.hotmaps-project.eu/) profiles for space heating (SH), space cooling (SC), and domestic hot water (DHW) across residential and tertiary sectors for the Zurich and Amsterdam regions of ineterst.
 * `generate_normalized_profiles.py`: Matches and normalizes Hotmaps generic load shapes based on season, day type, hour, and local ambient temperatures.
 * `generate_heating_and_cooling_demand.py`: Scales normalized profiles into hourly energy demand time series ($MWh/h$) for each target city.
-* `generate_electricity_prices.py`: Processes historical 2025 ENTSO-E Day-Ahead Market (DAM) wholesale power prices and applies local grid tariffs to construct total hourly electricity procurement costs.
+* `generate_electricity_prices.py`: Processes historical 2025 ENTSO-E Day-Ahead Market (DAM) wholesale energy prices and applies local grid tariffs to construct total hourly electricity procurement costs.
 * `EU_ETS_emissions_prices.py`: Retrieves and aligns daily 2025 EU ETS carbon allowance prices ($€/tCO_2$).
 * `Price_clusters_balancing_Netherlands.py` & `Price_clusters_balancing_Switzerland.py`: Implements K-Medoids scenario clustering on a 10-year historical dataset of 15-minute aFRR balancing market activation prices for Amsterdam and Zurich, respectively.
 
@@ -40,7 +40,8 @@ Before running optimization models, these standalone scripts process raw climati
   * `main.py` (or execution script): Formulates global energy balancing constraints, multi-energy network coupling, emissions accounting, and the deterministic multi-period objective function (TAC minimization).
 * **`Second Stage Optimization/`**:
   * `config2.py`: Stage-two control panel receiving the optimal asset capacities determined in Stage 1, alongside 15-minute operational and market parameters.
-  * Formulates the stochastic MILP co-optimization for optimal heating and cooling dispatch of the MES through Day-Ahead and Balancing Market (aFRR energy flexibility) participation over representative historical clusters.
+  * `Technology Clases`: They function like the first stage optimization but now with added decision variables and constraints regarding the participation in BM.
+  * `main2.py` (or execution script): Formulates the stochastic MILP co-optimization for optimal heating and cooling dispatch of the MES through Day-Ahead and Balancing Market (aFRR energy flexibility) participation over representative historical clusters..
 * **`Second Stage Optimization Sequential Approach/`**:
   * Implements a benchmark literature formulation where DAM electricity, natural gas, and biomass procurement decisions are fixed scenario-independently before balancing activations occur.
 * *Note on Repository Legacy:* The `stochastic DA running/` folder represents an exploratory branch for joint DAM/BM stochasticity and can be disregarded.
